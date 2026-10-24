@@ -3027,13 +3027,13 @@ body.tn-quantity-open{overflow:hidden!important}
       </div>
       <div class="modal-body" style="text-align:center;">
         <div class="qr-large" id="qr-large"></div>
-        <div class="qr-modal-refresh" style="display:flex;justify-content:center;gap:8px;font-size:12px;color:var(--muted);margin-bottom:16px;">Refreshing in <strong id="qr-countdown">30</strong>s</div>
+        <div class="qr-modal-refresh" style="display:flex;justify-content:center;gap:8px;font-size:12px;color:var(--muted);margin-bottom:16px;">Ticket reference <strong id="qr-countdown">—</strong></div>
         <div class="modal-event" id="modal-event-title">Event</div>
         <div class="modal-meta" id="modal-event-meta">Date · Venue</div>
         <div class="modal-seat-chips" id="modal-seat-chips"></div>
         <div class="warning-box" style="text-align:left;">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-          <div><strong>Barcode refreshes automatically</strong>Screenshots won't scan at the venue. Keep this screen open.</div>
+          <div><strong>Ticket status verification</strong>This QR opens TicketNest's verification page. Venue staff must check the result before admitting entry.</div>
         </div>
       </div>
       <div class="wallet-btns" style="flex-direction:column;">
@@ -3226,6 +3226,7 @@ body.tn-quantity-open{overflow:hidden!important}
   <div class="site-menu-note">TicketNest event discovery · Secure checkout and live ticket inventory will be enabled after payment and order verification are connected.</div>
 </aside>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
 /* ==========================================================
    VIEW ROUTING (home <-> event, same file)
@@ -4746,7 +4747,7 @@ $('done-btn').addEventListener('click', () => { closeDrawer(); showView('home');
           venue: [ev.venue, ev.city].filter(Boolean).join(', ') || 'Venue to be announced',
           img: ev.image_url || '',
           section: '—', row: '—', seat: '—',
-          qrSeed: '', verified: t.status === 'valid',
+          qrSeed: code, verified: t.status === 'valid',
           transferable: false, sellable: false,
           status: t.status
         };
@@ -4846,14 +4847,10 @@ $('done-btn').addEventListener('click', () => { closeDrawer(); showView('home');
         </div>
       </div>
       <div class="ticket-stub">
-        <div class="dyn-qr-wrap" style="display:grid;place-items:center;padding:10px;min-height:112px;background:#fff;border:1px dashed #cbd5e1;border-radius:8px;">
-          <div style="text-align:center;color:#334155;font-size:11px;line-height:1.5;">
-            <strong style="display:block;font-size:10px;color:#64748b;margin-bottom:5px;">TICKET REFERENCE</strong>
-            <span style="font-weight:800;overflow-wrap:anywhere;">${t.id}</span>
-            <span style="display:block;margin-top:5px;">${t.verified ? 'Valid ticket record' : 'Status: ' + (t.status || 'unverified')}</span>
-          </div>
+        <div class="ticket-qr" data-ticket-code="${t.ticketCode || ''}" aria-label="Scannable ticket verification QR" style="display:grid;place-items:center;padding:8px;min-height:112px;min-width:112px;background:#fff;border:1px solid #e2e8f0;border-radius:8px;">
+          ${t.ticketCode ? '<span style="font-size:11px;color:#64748b;text-align:center;">Preparing QR…</span>' : '<span style="font-size:11px;color:#64748b;text-align:center;">QR unavailable</span>'}
         </div>
-        <div class="qr-status"><span class="dot"></span>Secure entry QR not enabled</div>
+        <div class="qr-status"><span class="dot"></span>${t.verified ? 'Ticket status verified' : 'Not valid for entry'}</div>
         <div class="ticket-order">${t.id}</div>
         <div class="ticket-actions">
           ${t.transferable
@@ -4884,9 +4881,11 @@ $('done-btn').addEventListener('click', () => { closeDrawer(); showView('home');
       return;
     }
     grid.innerHTML = TICKETS.map(ticketHTML).join('');
-    grid.querySelectorAll('.dyn-qr-wrap').forEach((wrap, i) => {
-      const tk = TICKETS[+wrap.dataset.qr];
-      if (!tk.transferredNote) qrTimers.push(startDynamicQR(wrap, tk.qrSeed));
+    grid.querySelectorAll('.ticket-qr[data-ticket-code]').forEach((wrap) => {
+      const code = wrap.dataset.ticketCode || '';
+      if (!code || !window.QRCode) return;
+      const verifyUrl = 'https://ticketnest-38gi.onrender.com/verify-ticket.html?code=' + encodeURIComponent(code);
+      new QRCode(wrap, { text: verifyUrl, width: 96, height: 96, correctLevel: QRCode.CorrectLevel.M });
     });
   }
 
@@ -4909,19 +4908,19 @@ $('done-btn').addEventListener('click', () => { closeDrawer(); showView('home');
 
   function openQR(t) {
     if (t.transferredNote) return showToast('This ticket is locked: ' + t.transferredNote);
-    $('qr-large').innerHTML = generateQR(t.qrSeed + '_m' + Date.now());
+    $('qr-large').innerHTML = '';
+    if (t.ticketCode && window.QRCode) {
+      const verifyUrl = 'https://ticketnest-38gi.onrender.com/verify-ticket.html?code=' + encodeURIComponent(t.ticketCode);
+      new QRCode($('qr-large'), { text: verifyUrl, width: 220, height: 220, correctLevel: QRCode.CorrectLevel.M });
+    } else {
+      $('qr-large').textContent = 'QR unavailable for this ticket.';
+    }
     $('modal-event-title').textContent = t.event;
     $('modal-event-meta').textContent = `${t.date} · ${t.venue}`;
-    $('modal-seat-chips').innerHTML = [['Section', t.section], ['Row', t.row], ['Seat', t.seat]]
+    $('modal-seat-chips').innerHTML = [['Ticket', t.id], ['Status', t.status || 'unknown']]
       .map(([k, v]) => `<div class="modal-seat-chip"><span>${k}</span><strong>${v}</strong></div>`).join('');
-    let c = 30;
-    $('qr-countdown').textContent = c;
+    $('qr-countdown').textContent = '—';
     clearInterval(qrCountTimer);
-    qrCountTimer = setInterval(() => {
-      c--;
-      if (c <= 0) { $('qr-large').innerHTML = generateQR(t.qrSeed + '_m' + Date.now()); c = 30; }
-      $('qr-countdown').textContent = c;
-    }, 1000);
     openModal('qr-modal');
   }
   function closeQR() {
