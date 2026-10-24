@@ -2622,7 +2622,7 @@ body[data-theme="dark"] .auth-demo-note{border-top-color:#2b3545;color:#8f9bad}
                 </button>
                 <div class="summary-note">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                  Checkout will be available after secure payment setup
+                  Pay securely with M-Pesa through PayHero
                 </div>
               </div>
             </div>
@@ -2679,17 +2679,19 @@ body[data-theme="dark"] .auth-demo-note{border-top-color:#2b3545;color:#8f9bad}
       </div>
 
       <div class="drawer-step" data-step="3">
-        <h3>Payment Details</h3>
-        <p class="sub">Payment processing is not enabled in this preview. No card details are collected.</p>
+        <h3>Pay securely with M-Pesa</h3>
+        <p class="sub">TicketNest will send an M-Pesa STK Push to your phone through PayHero. Never share your M-Pesa PIN with anyone.</p>
         <div class="order-box" id="payment-total-box"></div>
-<div class="empty-tickets"><h3>Secure payment not connected</h3><p>Card information will only be collected through a supported payment provider after the backend is ready. Do not enter payment details in this preview.</p></div>
+        <div class="field"><label for="payhero-phone">M-Pesa phone number</label><input type="tel" id="payhero-phone" inputmode="tel" autocomplete="tel" placeholder="0712345678" aria-describedby="payhero-phone-help"></div>
+        <p class="sub" id="payhero-phone-help">Use the Kenyan number that should receive the payment prompt.</p>
+        <p id="payhero-payment-status" role="status" aria-live="polite"></p>
       </div>
 
       <div class="drawer-step" data-step="4">
         <div class="success-screen">
-          <div class="success-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 8v4m0 4h.01"/><circle cx="12" cy="12" r="10"/></svg></div>
-          <h3>Checkout is not available yet</h3>
-          <p>No order has been created and no payment has been taken. Secure inventory and payment services must be connected before tickets can be purchased.</p>
+          <div class="success-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m5 12 4 4L19 6"/></svg></div>
+          <h3>Payment confirmed!</h3>
+          <p>Your M-Pesa payment has been verified and your tickets have been issued. You can find them in your TicketNest account.</p>
           <button class="btn btn-outline btn-block" id="done-btn">Back to Events</button>
         </div>
       </div>
@@ -3694,21 +3696,11 @@ function ensureQuantityTier(){
   selectTier(first.id);
   return true;
 }
-// Delegate quantity events from the document so they remain reliable if the event panel is re-rendered.
-document.addEventListener('click',event=>{
-  const minus=event.target.closest('#qty-minus'),plus=event.target.closest('#qty-plus');
-  if(!minus&&!plus)return;
-  event.preventDefault();
-  if(!ensureQuantityTier())return;
-  if(minus){setTicketQuantity(Number(qty||1)-1);return;}
-  const tier=TIERS[selectedTier];
-  const maximum=Math.min(8,Math.max(0,Number(tier.quantity_total)-Number(tier.quantity_sold)));
-  if(Number(qty)>=maximum){(window.showToast||alert)('Maximum available quantity is '+maximum+' for this category.');return;}
-  setTicketQuantity(Number(qty||1)+1);
-});
-document.addEventListener('input',event=>{if(event.target.matches('#qty-input'))setTicketQuantity(event.target.value)});
-document.addEventListener('change',event=>{if(event.target.matches('#qty-input'))setTicketQuantity(event.target.value)});
-document.addEventListener('keydown',event=>{if(event.target.matches('#qty-input')&&(event.key==='ArrowUp'||event.key==='ArrowDown'))event.stopPropagation();});
+// Bind the quantity controls directly. This avoids missed delegated clicks on mobile.
+const quantityMinusButton=$('qty-minus'),quantityPlusButton=$('qty-plus'),quantityInput=$('qty-input');
+if(quantityMinusButton)quantityMinusButton.addEventListener('click',event=>{event.preventDefault();if(!ensureQuantityTier())return;setTicketQuantity(Number(qty||1)-1);});
+if(quantityPlusButton)quantityPlusButton.addEventListener('click',event=>{event.preventDefault();if(!ensureQuantityTier())return;const tier=TIERS[selectedTier];const maximum=Math.min(8,Math.max(0,Number(tier.quantity_total)-Number(tier.quantity_sold)));if(Number(qty)>=maximum){(window.showToast||alert)('Maximum available quantity is '+maximum+' for this category.');return;}setTicketQuantity(Number(qty||1)+1);});
+if(quantityInput){quantityInput.addEventListener('input',()=>{if(quantityInput.value!=='')setTicketQuantity(quantityInput.value)});quantityInput.addEventListener('change',()=>setTicketQuantity(quantityInput.value));}
 
 
 /* ==========================================================
@@ -3736,7 +3728,9 @@ function addToCart() {
   }
   updateCartCount();openDrawer(1);
 }
-document.addEventListener('click',e=>{const button=e.target.closest('#add-to-cart-btn, #mobile-cart-btn');if(!button)return;e.preventDefault();if(button.disabled)return;try{addToCart()}catch(error){console.error('TicketNest add-to-cart error:',error);(window.showToast||alert)(error.message||'Could not add tickets. Please try again.')}});
+function handleAddToCartClick(event){event.preventDefault();if(event.currentTarget.disabled)return;try{addToCart()}catch(error){console.error('TicketNest add-to-cart error:',error);(window.showToast||alert)(error.message||'Could not add tickets. Please try again.')}}
+$('add-to-cart-btn')?.addEventListener('click',handleAddToCartClick);
+$('mobile-cart-btn')?.addEventListener('click',handleAddToCartClick);
 
 function updateCartCount() {
   const count = cart.reduce((s, i) => s + i.qty, 0);
@@ -3936,18 +3930,60 @@ function goToStep(step) {
       goToStep(3);
     });
   } else if (step === 3) {
-    foot.innerHTML = `<button class="btn btn-outline btn-lg" style="flex:1" id="back-3">Back</button><button class="btn btn-primary btn-lg" style="flex:1" id="pay-now" disabled>Payment setup required</button>`;
+    foot.innerHTML = `<button class="btn btn-outline btn-lg" style="flex:1" id="back-3">Back</button><button class="btn btn-primary btn-lg" style="flex:1" id="pay-now">Pay with M-Pesa</button>`;
     $('back-3').addEventListener('click', () => goToStep(2)); $('pay-now').addEventListener('click', processPayment);
   } else foot.innerHTML = '';
   if (step === 2) startReservationCountdown();
 }
 
-function processPayment() {
-  const btn = $('pay-now');
-  if (btn) { btn.disabled = true; btn.textContent = 'Checkout unavailable'; }
-  const message = 'Checkout is not available in this frontend preview. Real inventory, a payment provider, and server-side payment verification must be connected before orders can be placed.';
-  if (window.showToast) window.showToast(message); else alert(message);
-  if (btn) { btn.disabled = false; btn.textContent = 'Payment setup required'; }
+async function processPayment() {
+  const btn=$('pay-now'),statusEl=$('payhero-payment-status'),phone=$('payhero-phone')?.value.trim()||'';
+  const notify=message=>{if(statusEl)statusEl.textContent=message;if(window.showToast)window.showToast(message);else alert(message)};
+  if(!ticketReservationIds.length||!reservationExpiresAt||Date.parse(reservationExpiresAt)<=Date.now()){notify('Your ticket reservation has expired. Go back and check availability again.');goToStep(1);return;}
+  if(!/^((\+?254)|0)[17]\d{8}$/.test(phone.replace(/[\s()-]/g,''))){notify('Enter a valid Kenyan M-Pesa number, for example 0712345678.');return;}
+  const token=window.ticketNestGetAccessToken?await window.ticketNestGetAccessToken():null;
+  if(!token){if(window.ticketNestOpenAuth)window.ticketNestOpenAuth('login');notify('Please sign in again before paying.');return;}
+  if(btn){btn.disabled=true;btn.textContent='Sending M-Pesa prompt…';}
+  if(statusEl)statusEl.textContent='Connecting securely to PayHero…';
+  try{
+    const response=await fetch(TICKETNEST_SUPABASE_URL+'/functions/v1/payhero-checkout',{
+      method:'POST',headers:{apikey:TICKETNEST_SUPABASE_KEY,Authorization:'Bearer '+token,'Content-Type':'application/json',Accept:'application/json'},
+      body:JSON.stringify({reservation_ids:ticketReservationIds,phone_number:phone})
+    });
+    const data=await response.json().catch(()=>({}));
+    if(!response.ok||!data.ok)throw new Error(data.error||'Could not start the M-Pesa payment.');
+    if(statusEl)statusEl.textContent=data.message+' Amount: KSh '+Number(data.amount_kes).toLocaleString('en-KE')+'. Keep this page open while payment is confirmed.';
+    if(btn)btn.textContent='Waiting for M-Pesa…';
+    await pollPayHeroPayment(data.external_reference,token);
+  }catch(error){
+    console.error('TicketNest PayHero checkout error:',error);
+    notify(error.message||'Payment could not be started. Please try again.');
+    if(btn){btn.disabled=false;btn.textContent='Pay with M-Pesa';}
+  }
+}
+async function pollPayHeroPayment(reference,token){
+  const btn=$('pay-now'),statusEl=$('payhero-payment-status');
+  const started=Date.now();
+  while(Date.now()-started<150000){
+    await new Promise(resolve=>setTimeout(resolve,3000));
+    const response=await fetch(TICKETNEST_SUPABASE_URL+'/functions/v1/payhero-checkout?action=status',{
+      method:'POST',headers:{apikey:TICKETNEST_SUPABASE_KEY,Authorization:'Bearer '+token,'Content-Type':'application/json',Accept:'application/json'},
+      body:JSON.stringify({external_reference:reference})
+    });
+    const data=await response.json().catch(()=>({}));
+    if(!response.ok)throw new Error(data.error||'Could not check payment status.');
+    if(data.status==='paid'){
+      ticketReservationIds=[];reservationExpiresAt=null;
+      if(reservationCountdownTimer){clearInterval(reservationCountdownTimer);reservationCountdownTimer=null;}
+      if(statusEl)statusEl.textContent='Payment verified. Your tickets have been issued.';
+      if(btn){btn.disabled=true;btn.textContent='Payment confirmed';}
+      goToStep(4);return;
+    }
+    if(data.status==='failed')throw new Error('The M-Pesa payment failed or was cancelled. You can try again.');
+    if(statusEl)statusEl.textContent='Waiting for PayHero to confirm your M-Pesa payment…';
+  }
+  if(statusEl)statusEl.textContent='Payment is still pending. Check your phone. You can safely close this window; do not pay twice.';
+  if(btn){btn.disabled=true;btn.textContent='Payment pending';}
 }
 
 $('done-btn').addEventListener('click', () => { closeDrawer(); showView('home'); history.replaceState(null, '', '#home'); });
