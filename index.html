@@ -5514,9 +5514,20 @@ $('done-btn').addEventListener('click', () => { closeDrawer(); showView('home');
     const get = async (table, params) => {
       const url = new URL(SUPABASE + '/rest/v1/' + table);
       Object.entries(params).forEach(([key, value]) => url.searchParams.set(key, value));
-      const response = await fetch(url.toString(), { headers, cache: 'no-store' });
-      if (!response.ok) throw new Error(table + ' request failed (' + response.status + ')');
-      return response.json();
+      let response;
+      try {
+        response = await fetch(url.toString(), { headers, cache: 'no-store' });
+      } catch (networkError) {
+        throw new Error(table + ' network/CORS error: ' + (networkError && networkError.message ? networkError.message : 'request blocked'));
+      }
+      const responseText = await response.text();
+      if (!response.ok) {
+        let detail = responseText;
+        try { const parsed = JSON.parse(responseText); detail = parsed.message || parsed.error_description || parsed.hint || responseText; } catch (_) {}
+        throw new Error(table + ' request failed (' + response.status + '): ' + String(detail).slice(0, 180));
+      }
+      try { return JSON.parse(responseText); }
+      catch (_) { throw new Error(table + ' returned invalid JSON'); }
     };
     try {
       const found = await get('events', {select:'id,title,venue,city,starts_at,category,status', title:'eq.' + eventTitle, status:'eq.published', limit:'1'});
@@ -5563,8 +5574,8 @@ $('done-btn').addEventListener('click', () => { closeDrawer(); showView('home');
       });
     } catch (error) {
       list.innerHTML = '<div class="empty-state"><p>Ticket options could not load: ' + esc(error.message) + '</p></div>';
-      map.innerHTML = '<text x="250" y="230" text-anchor="middle" fill="currentColor" font-size="13">Map could not load</text>';
-      legend.textContent = 'Live seating map connection failed.';
+      map.innerHTML = '<text x="250" y="190" text-anchor="middle" fill="currentColor" font-size="13">Map could not load</text><text x="250" y="216" text-anchor="middle" fill="currentColor" font-size="10">' + esc(error.message).slice(0, 90) + '</text>';
+      legend.textContent = 'Debug details: ' + String(error.message || 'Unknown error').slice(0, 180);
       console.error('TicketNest seating recovery:', error);
     }
   }
