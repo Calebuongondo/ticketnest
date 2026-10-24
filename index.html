@@ -3282,7 +3282,14 @@ document.addEventListener('click', (e) => {
   }
 });
 if (location.hash === '#event') showView('event'); else showView('home');
-Promise.resolve().then(() => loadPublishedEvents());
+// If someone opens or refreshes a direct #event link, initialize the event page after the live catalogue loads.
+Promise.resolve().then(async () => {
+  const loadedEvents = await loadPublishedEvents();
+  if (location.hash === '#event' && !activeTicketEvent && loadedEvents.length) {
+    setEventDetails(loadedEvents[0]);
+    showView('event');
+  }
+});
 
 /* ==========================================================
    SHARED EVENT CATALOGUE
