@@ -1887,6 +1887,35 @@ body[data-theme="dark"] .auth-demo-note{border-top-color:#2b3545;color:#8f9bad}
     .footer-brand { grid-column: auto; }
   }
 
+
+  .tn-link-info-overlay {
+    position: fixed; inset: 0; z-index: 10000; display: none;
+    align-items: center; justify-content: center; padding: 18px;
+    background: rgba(3,10,22,.72); backdrop-filter: blur(5px);
+  }
+  .tn-link-info-overlay.tn-link-info-open { display: flex; }
+  .tn-link-info-card {
+    width: min(100%, 560px); max-height: 86dvh; overflow: auto;
+    padding: clamp(22px,5vw,34px); border-radius: 18px;
+    border: 1px solid #DDE5F0; background: #FFFFFF; color: #172338;
+    box-shadow: 0 24px 80px rgba(0,0,0,.28);
+  }
+  .tn-link-info-card h2 { margin: 0 44px 12px 0; color: #10213A; font-size: clamp(23px,5vw,30px); line-height: 1.2; }
+  .tn-link-info-card p { color: #435169; line-height: 1.7; }
+  .tn-link-info-card .tn-link-info-label { margin: 0 0 8px; color: #075FC4; font-size: 11px; font-weight: 850; letter-spacing: .14em; }
+  .tn-link-info-card .tn-link-info-note { margin-top: 20px; padding: 13px 15px; border-radius: 10px; background: #EEF5FF; color: #20456F; font-size: 13px; }
+  .tn-link-info-card .tn-link-info-close {
+    float: right; display: grid; place-items: center; width: 40px; height: 40px;
+    border-radius: 10px; border: 1px solid #D7E0EC; background: #F4F7FB;
+    color: #14233A; font-size: 23px; cursor: pointer;
+  }
+  body[data-theme="dark"] .tn-link-info-card { background: #121A26; border-color: #3A4960; color: #F4F7FC; }
+  body[data-theme="dark"] .tn-link-info-card h2 { color: #F4F7FC; }
+  body[data-theme="dark"] .tn-link-info-card p { color: #C0CAD8; }
+  body[data-theme="dark"] .tn-link-info-card .tn-link-info-label { color: #91C6FF; }
+  body[data-theme="dark"] .tn-link-info-card .tn-link-info-note { background: #1B3451; color: #DCEBFF; }
+  body[data-theme="dark"] .tn-link-info-card .tn-link-info-close { background: #1C2838; color: #F4F7FC; border-color: #46556B; }
+
 </style>
 </head>
 <body>
@@ -4946,6 +4975,68 @@ $('done-btn').addEventListener('click', () => { closeDrawer(); showView('home');
  const note = document.querySelector('.auth-demo-note');
  if (note) note.textContent = 'Secure account sign-in and registration are powered by TicketNest authentication. Never share your password with anyone.';
  restoreSession();
+})();
+</script>
+
+
+<script>
+/* Make footer-only placeholder destinations respond without sending visitors to the top of the page. */
+(() => {
+  const pages = {
+    "Help Center": ["Help Center", "Use search to find an event, open its listing to view details, and sign in to access account tools. Secure checkout and ticket issuance must be connected before orders can be completed.", "The full help articles are not published yet."],
+    "Contact Us": ["Contact TicketNest", "A verified public support email or telephone number has not been configured on this website. We will not invent contact details.", "The site owner needs to add official contact details."],
+    "Refund Policy": ["Refund information", "Refund eligibility depends on the event terms, organiser, and applicable law. No refund request can be submitted from this preview because live order and payment services are not connected.", "A complete, reviewed refund policy must be published before sales begin."],
+    "Accessibility": ["Accessibility", "TicketNest is being improved for keyboard navigation, readable contrast, clear focus indicators, and responsive layouts. The complete website still needs accessibility testing before launch.", "This notice is not a claim of full accessibility compliance."],
+    "Sell Tickets": ["Sell tickets", "Public seller onboarding, ticket resale, and payouts are not enabled in this version. Event management is currently handled through the site's administrative tools.", "Seller verification and secure payment services must be configured before public selling."],
+    "About Us": ["About TicketNest", "TicketNest is an event-discovery and ticketing marketplace project designed to help people discover live events and manage ticket-related activity.", "The site owner can replace this summary with the official company profile."],
+    "Careers": ["Careers", "There are no verified job listings or application links configured on this website yet.", "Add a real careers page when roles are available."],
+    "Press": ["Press", "Official press releases, media contacts, and downloadable brand assets have not been configured on this website yet.", "Add verified press materials before publishing this destination."],
+    "Partners": ["Partners", "Partner listings and partner onboarding are not available in this version.", "Partner access and agreements need to be configured by the site owner."],
+    "Blog": ["TicketNest Blog", "Articles and editorial content have not been published on this website yet.", "Connect or publish a real blog before promoting this link."],
+    "Privacy Policy": ["Privacy information", "The site owner must publish a full privacy policy explaining what personal data is collected, why it is used, the services that process it, retention periods, user rights, and how to contact the responsible organisation.", "This summary is not a substitute for a complete, legally reviewed privacy policy."],
+    "Terms of Use": ["Terms of Use", "Complete terms covering accounts, event listings, ticket sales, cancellations, transfers, prohibited conduct, and dispute handling have not been published here.", "Reviewed terms must be published before accepting orders or payments."],
+    "Cookie Settings": ["Cookie settings", "A full cookie-preference centre has not been configured in this version, so there are no preference controls to save here yet.", "Configure a consent manager and connect it to the site's actual cookies and services."],
+    "Do Not Sell My Info": ["Privacy choices", "A privacy-request workflow has not been configured, so this preview cannot submit or track a request.", "Add a verified privacy-request form and fulfilment process."],
+    "Twitter": ["Twitter / X", "An official TicketNest profile URL has not been configured."],
+    "Instagram": ["Instagram", "An official TicketNest profile URL has not been configured."],
+    "Facebook": ["Facebook", "An official TicketNest profile URL has not been configured."],
+    "YouTube": ["YouTube", "An official TicketNest channel URL has not been configured."]
+  };
+  let overlay;
+  let returnFocus;
+  function close() {
+    if (!overlay) return;
+    overlay.classList.remove("tn-link-info-open");
+    document.body.style.overflow = "";
+    if (returnFocus && returnFocus.focus) returnFocus.focus();
+  }
+  function open(key, source) {
+    const page = pages[key];
+    if (!page) return false;
+    returnFocus = source;
+    if (!overlay) {
+      overlay = document.createElement("div");
+      overlay.className = "tn-link-info-overlay";
+      overlay.innerHTML = '<section class="tn-link-info-card" role="dialog" aria-modal="true" aria-labelledby="tn-link-info-title" tabindex="-1"><button type="button" class="tn-link-info-close" aria-label="Close">×</button><p class="tn-link-info-label">TICKETNEST</p><h2 id="tn-link-info-title"></h2><p class="tn-link-info-copy"></p><p class="tn-link-info-note"></p></section>';
+      document.body.appendChild(overlay);
+      overlay.querySelector(".tn-link-info-close").addEventListener("click", close);
+      overlay.addEventListener("click", event => { if (event.target === overlay) close(); });
+      document.addEventListener("keydown", event => { if (event.key === "Escape" && overlay.classList.contains("tn-link-info-open")) close(); });
+    }
+    overlay.querySelector("#tn-link-info-title").textContent = page[0];
+    overlay.querySelector(".tn-link-info-copy").textContent = page[1];
+    overlay.querySelector(".tn-link-info-note").textContent = page[2] || "This destination has not been configured yet.";
+    overlay.classList.add("tn-link-info-open");
+    document.body.style.overflow = "hidden";
+    overlay.querySelector(".tn-link-info-close").focus();
+    return true;
+  }
+  document.addEventListener("click", event => {
+    const link = event.target.closest("footer a[href='#'], .socials a[href='#']");
+    if (!link) return;
+    const key = (link.getAttribute("aria-label") || link.textContent || "").replace(/\s+/g, " ").trim();
+    if (open(key, link)) event.preventDefault();
+  });
 })();
 </script>
 
