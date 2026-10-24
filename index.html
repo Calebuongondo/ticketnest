@@ -3772,29 +3772,50 @@ let reservationInProgress = false;
 async function reserveCartInventory() {
   if (reservationInProgress) return;
   if (!cart.length) throw new Error('Your cart is empty.');
-  if (ticketReservationIds.length === cart.length && reservationExpiresAt && Date.parse(reservationExpiresAt) > Date.now()) return;
+  if (ticketReservationIds.length && reservationExpiresAt && Date.parse(reservationExpiresAt) > Date.now()) return;
   reservationInProgress = true;
   const btn = $('continue-1');
   if (btn) { btn.disabled = true; btn.textContent = 'Checking availability…'; }
   try {
-    const headers = { apikey: TICKETNEST_SUPABASE_KEY, Authorization: 'Bearer ' + TICKETNEST_SUPABASE_KEY, 'Content-Type': 'application/json', Accept: 'application/json' };
-    const created = [];
-    for (const item of cart) {
-      if (!item.eventId || !item.tierId) throw new Error('A cart item is missing its event or ticket category. Remove it and add it again.');
-      const response = await fetch(TICKETNEST_SUPABASE_URL + '/rest/v1/rpc/create_ticket_reservation', { method: 'POST', headers, body: JSON.stringify({ p_event_id: item.eventId, p_ticket_tier_id: item.tierId, p_quantity: item.qty }) });
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        const message = payload.message || payload.details || payload.hint || 'Reservation could not be created.';
-        if (response.status === 401 || response.status === 403) throw new Error('The database requires a signed-in customer to reserve tickets. Customer sign-in must be connected before checkout can reserve tickets.');
-        throw new Error(message);
-      }
-      created.push(payload);
+    const accessToken = window.ticketNestGetAccessToken ? await window.ticketNestGetAccessToken() : null;
+    if (!accessToken) {
+      if (window.ticketNestOpenAuth) window.ticketNestOpenAuth('login');
+      throw new Error('Please sign in or create a TicketNest account to reserve tickets. Your cart will remain saved on this page.');
     }
-    ticketReservationIds = created.map(r => r.reservation_id).filter(Boolean);
-    reservationExpiresAt = created.map(r => r.expires_at).filter(Boolean).sort()[0] || new Date(Date.now() + 600000).toISOString();
+    const items = cart.map(item => {
+      if (!item.eventId || !item.tierId) throw new Error('A cart item is missing its event or ticket category. Remove it and add it again.');
+      return { event_id: item.eventId, ticket_tier_id: item.tierId, quantity: item.qty };
+    });
+    const response = await fetch(TICKETNEST_SUPABASE_URL + '/rest/v1/rpc/create_ticket_reservations', {
+      method: 'POST',
+      headers: {
+        apikey: TICKETNEST_SUPABASE_KEY,
+        Authorization: 'Bearer ' + accessToken,
+        'Content-Type': 'application/json',
+        Accept: 'application/json'
+      },
+      body: JSON.stringify({ p_items: items })
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const message = payload.message || payload.details || payload.hint || 'Reservation could not be created.';
+      if (response.status === 401 || response.status === 403) throw new Error('Please sign in again, then retry your reservation.');
+      throw new Error(message);
+    }
+    if (!Array.isArray(payload) || payload.length !== cart.length || payload.some(r => !r.reservation_id || !r.expires_at)) {
+      throw new Error('The reservation response was incomplete. Please return to your cart and try again.');
+    }
+    ticketReservationIds = payload.map(r => r.reservation_id);
+    reservationExpiresAt = payload.map(r => r.expires_at).sort()[0];
     startReservationCountdown();
-  } catch (error) { ticketReservationIds = []; reservationExpiresAt = null; throw error; }
-  finally { reservationInProgress = false; if (btn) { btn.disabled = cart.length === 0; btn.textContent = 'Continue · $' + calcTotals().total; } }
+  } catch (error) {
+    ticketReservationIds = [];
+    reservationExpiresAt = null;
+    throw error;
+  } finally {
+    reservationInProgress = false;
+    if (btn) { btn.disabled = cart.length === 0; btn.textContent = 'Continue · $' + calcTotals().total; }
+  }
 }
 function startReservationCountdown() {
   if (reservationCountdownTimer) clearInterval(reservationCountdownTimer);
@@ -5383,6 +5404,16 @@ $('done-btn').addEventListener('click', () => { closeDrawer(); showView('home');
    }
  }
  window.ticketNestOpenAuth = open;
+ window.ticketNestGetAccessToken = async function () {
+   let session = storedSession();
+   if (!session || !session.access_token) return null;
+   if (session.expires_at && session.expires_at < Math.floor(Date.now() / 1000) + 60 && session.refresh_token) {
+     session = await authRequest('token?grant_type=refresh_token', { refresh_token: session.refresh_token });
+     saveSession(session, rememberChoice());
+   }
+   await getUser(session.access_token);
+   return session.access_token;
+ };
  window.ticketNestSignOut = function () {
    clearSession();
    currentUser = null;
@@ -7406,6 +7437,16 @@ $('done-btn').addEventListener('click', () => { closeDrawer(); showView('home');
    }
  }
  window.ticketNestOpenAuth = open;
+ window.ticketNestGetAccessToken = async function () {
+   let session = storedSession();
+   if (!session || !session.access_token) return null;
+   if (session.expires_at && session.expires_at < Math.floor(Date.now() / 1000) + 60 && session.refresh_token) {
+     session = await authRequest('token?grant_type=refresh_token', { refresh_token: session.refresh_token });
+     saveSession(session, rememberChoice());
+   }
+   await getUser(session.access_token);
+   return session.access_token;
+ };
  window.ticketNestSignOut = function () {
    clearSession();
    currentUser = null;
@@ -9431,6 +9472,16 @@ $('done-btn').addEventListener('click', () => { closeDrawer(); showView('home');
    }
  }
  window.ticketNestOpenAuth = open;
+ window.ticketNestGetAccessToken = async function () {
+   let session = storedSession();
+   if (!session || !session.access_token) return null;
+   if (session.expires_at && session.expires_at < Math.floor(Date.now() / 1000) + 60 && session.refresh_token) {
+     session = await authRequest('token?grant_type=refresh_token', { refresh_token: session.refresh_token });
+     saveSession(session, rememberChoice());
+   }
+   await getUser(session.access_token);
+   return session.access_token;
+ };
  window.ticketNestSignOut = function () {
    clearSession();
    currentUser = null;
