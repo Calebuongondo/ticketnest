@@ -3229,6 +3229,24 @@ body.tn-quantity-open{overflow:hidden!important}
   <div class="site-menu-note">TicketNest event discovery · Secure checkout and live ticket inventory will be enabled after payment and order verification are connected.</div>
 </aside>
 
+<div id="ticket-quantity-overlay" aria-hidden="true">
+  <section id="ticket-quantity-sheet" role="dialog" aria-modal="true" aria-labelledby="tnq-title">
+    <div class="tnq-grabber" aria-hidden="true"></div>
+    <h2 id="tnq-title">How many tickets?</h2>
+    <div class="tnq-together"><span aria-hidden="true">▣</span><span>You’ll be seated together</span></div>
+    <div class="tnq-options" role="group" aria-label="Choose ticket quantity">
+      <button type="button" class="tnq-option" data-tn-quantity="1" aria-pressed="true">1</button>
+      <button type="button" class="tnq-option" data-tn-quantity="2" aria-pressed="false">2</button>
+      <button type="button" class="tnq-option" data-tn-quantity="3" aria-pressed="false">3</button>
+      <button type="button" class="tnq-option" data-tn-quantity="4" aria-pressed="false">4</button>
+      <button type="button" class="tnq-option" data-tn-quantity="5" aria-pressed="false">5</button>
+      <button type="button" class="tnq-option" data-tn-quantity="6" aria-pressed="false">6+</button>
+    </div>
+    <button type="button" class="tnq-continue" id="tnq-continue">Continue</button>
+    <p class="tnq-note">Available ticket options depend on the event.</p>
+  </section>
+</div>
+
 <script>
 /* ==========================================================
    VIEW ROUTING (home <-> event, same file)
@@ -6062,23 +6080,6 @@ $('done-btn').addEventListener('click', () => { closeDrawer(); showView('home');
 })();
 </script>
 
-<div id="ticket-quantity-overlay" aria-hidden="true">
-  <section id="ticket-quantity-sheet" role="dialog" aria-modal="true" aria-labelledby="tnq-title">
-    <div class="tnq-grabber" aria-hidden="true"></div>
-    <h2 id="tnq-title">How many tickets?</h2>
-    <div class="tnq-together"><span aria-hidden="true">▣</span><span>You’ll be seated together</span></div>
-    <div class="tnq-options" role="group" aria-label="Choose ticket quantity">
-      <button type="button" class="tnq-option" data-tn-quantity="1" aria-pressed="true">1</button>
-      <button type="button" class="tnq-option" data-tn-quantity="2" aria-pressed="false">2</button>
-      <button type="button" class="tnq-option" data-tn-quantity="3" aria-pressed="false">3</button>
-      <button type="button" class="tnq-option" data-tn-quantity="4" aria-pressed="false">4</button>
-      <button type="button" class="tnq-option" data-tn-quantity="5" aria-pressed="false">5</button>
-      <button type="button" class="tnq-option" data-tn-quantity="6" aria-pressed="false">6+</button>
-    </div>
-    <button type="button" class="tnq-continue" id="tnq-continue">Continue</button>
-    <p class="tnq-note">Available ticket options depend on the event.</p>
-  </section>
-</div>
 
 </body>
 </html>
