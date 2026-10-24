@@ -1916,6 +1916,90 @@ body[data-theme="dark"] .auth-demo-note{border-top-color:#2b3545;color:#8f9bad}
   body[data-theme="dark"] .tn-link-info-card .tn-link-info-note { background: #1B3451; color: #DCEBFF; }
   body[data-theme="dark"] .tn-link-info-card .tn-link-info-close { background: #1C2838; color: #F4F7FC; border-color: #46556B; }
 
+
+  /* Breadcrumb repair: the browser's default ordered-list numbers were colliding
+     with the custom chevron separators. Keep breadcrumbs on one controlled row. */
+  .breadcrumb ol {
+    display: flex;
+    flex-flow: row wrap;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+    list-style: none !important;
+    margin: 0;
+    padding: 0;
+    min-width: 0;
+  }
+  .breadcrumb ol > li {
+    display: inline-flex;
+    flex: 0 1 auto;
+    align-items: center;
+    gap: 8px;
+    list-style: none !important;
+    margin: 0;
+    padding: 0;
+    min-width: 0;
+    max-width: 100%;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+  }
+  .breadcrumb ol > li::marker { content: ""; }
+  .breadcrumb ol > li:nth-child(even) { flex: 0 0 auto; }
+  .breadcrumb ol > li:nth-child(even) svg {
+    display: block;
+    width: 14px;
+    height: 14px;
+    flex: 0 0 14px;
+    margin: 0;
+  }
+  .breadcrumb ol > li:last-child {
+    flex: 0 1 auto;
+    font-weight: 650;
+    overflow-wrap: anywhere;
+  }
+  .breadcrumb ol > li > a {
+    display: inline-block;
+    max-width: 100%;
+    line-height: 1.5;
+    text-decoration: none;
+  }
+  .breadcrumb ol > li > a:hover { text-decoration: underline; }
+  @media (max-width: 480px) {
+    .breadcrumb { padding: 12px 0; }
+    .breadcrumb ol { gap: 5px; font-size: 12px; }
+    .breadcrumb ol > li { gap: 5px; }
+    .breadcrumb ol > li:nth-child(even) svg { width: 12px; height: 12px; flex-basis: 12px; }
+  }
+
+  /* Give TicketNest a consistent, premium ticket-marketplace finish without
+     changing the event data, view routing, account logic or admin integrations. */
+  .section-head { align-items: end; }
+  .section-head h2 { letter-spacing: -.025em; }
+  .event-card, .cat-card, .fav-card {
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    overflow: hidden;
+    transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+  }
+  .event-card:hover, .cat-card:hover, .fav-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 14px 34px rgba(15,35,65,.13);
+  }
+  .event-media img { transition: transform .35s ease; }
+  .event-card:hover .event-media img { transform: scale(1.025); }
+  .event-body h3 { letter-spacing: -.01em; }
+  .btn, .tickets-link, .search-btn { font-weight: 650; }
+  body[data-theme="dark"] .event-card:hover,
+  body[data-theme="dark"] .cat-card:hover,
+  body[data-theme="dark"] .fav-card:hover {
+    border-color: #526985;
+    box-shadow: 0 16px 36px rgba(0,0,0,.3);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .event-card, .cat-card, .fav-card, .event-media img { transition: none !important; }
+    .event-card:hover, .cat-card:hover, .fav-card:hover { transform: none; }
+  }
+
 </style>
 </head>
 <body>
