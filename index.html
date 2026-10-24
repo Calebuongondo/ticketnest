@@ -3582,17 +3582,16 @@ function renderEventTicketOptions(){
   const availableTiers=Object.values(TIERS);
   if(!availableTiers.length){
     list.innerHTML='<div class="empty-state"><p>No ticket categories are configured for this event yet. Please check back later.</p></div>';
-    map.innerHTML='<rect x="12" y="8" width="476" height="440" rx="100" fill="#1e293b" stroke="#94a3b8" stroke-width="3"/><rect x="42" y="39" width="416" height="378" rx="75" fill="none" stroke="#64748b" stroke-width="14"/><rect x="135" y="155" width="230" height="150" rx="8" fill="#16804a" stroke="#d1fae5" stroke-width="3"/><path d="M250 155V305 M135 230H365" stroke="#dcfce7" stroke-width="2"/><text x="250" y="222" text-anchor="middle" fill="#fff" font-size="13">ARENA / FIELD</text><text x="250" y="245" text-anchor="middle" fill="#fff" font-size="12">Seating zones not configured</text>';
-    legend.innerHTML='<span>No seating zones configured for this event yet.</span>';
+    map.innerHTML='<rect x="12" y="8" width="476" height="440" rx="100" fill="#1e293b" stroke="#94a3b8" stroke-width="3"/><text x="250" y="230" text-anchor="middle" fill="#fff" font-size="13">No available tickets</text>';
+    legend.innerHTML='<span>No available tickets or seating zones.</span>';
     selectedTier=null;updateSummary();return;
   }
   list.innerHTML=availableTiers.map(t=>'<button type="button" class="tier-card" data-tier="'+t.id+'"><span class="tier-swatch" style="background:'+t.color+'"></span><span class="tier-info"><span class="tier-name">'+escapeTicketText(t.name)+'</span><span class="tier-desc">'+Math.max(0,t.quantity_total-t.quantity_sold)+' available</span></span><span class="tier-price"><strong>$'+t.price.toFixed(2)+'</strong><small>per ticket</small></span></button>').join('');
   const zones=activeZones;
   if(!zones.length){
-    map.innerHTML='<rect class="stage" x="150" y="10" width="200" height="34" rx="6"/><text class="stage-text" x="250" y="32">STAGE</text><text x="250" y="230" text-anchor="middle" fill="currentColor" font-size="13">No seating zones configured</text>';
+    map.innerHTML='<rect x="12" y="8" width="476" height="440" rx="100" fill="#1e293b" stroke="#94a3b8" stroke-width="3"/><text x="250" y="230" text-anchor="middle" fill="#fff" font-size="13">No seating zones configured</text>';
     legend.innerHTML='<span>Ticket categories are available below; the administrator has not added map zones yet.</span>';
   }else{
-    const cellW=zones.length>8?94:zones.length>4?106:118,cellH=48;
     let svg='';
     if(activeVenueMapImage){
       svg+='<image href="'+escapeTicketText(activeVenueMapImage)+'" x="12" y="8" width="476" height="440" preserveAspectRatio="xMidYMid meet"/><rect x="12" y="8" width="476" height="440" rx="16" fill="none" stroke="#94a3b8" stroke-width="3"/>';
@@ -3609,8 +3608,17 @@ function renderEventTicketOptions(){
       }
       if(activeVenueLayout==='concert_arena')svg+='<text x="250" y="106" text-anchor="middle" fill="#fff" font-size="10" font-weight="800" letter-spacing="1">STAGE / FRONT</text>';
     }
-    zones.forEach((z,i)=>{const angle=(-Math.PI/2)+(i/zones.length)*Math.PI*2,cx=250+Math.cos(angle)*174,cy=230+Math.sin(angle)*166,rotation=angle*180/Math.PI+90,tier=TIERS[z.ticket_tier_id],soldOut=!tier||tier.quantity_total<=tier.quantity_sold;
-      svg+='<g class="seat-zone-group" data-tier="'+z.ticket_tier_id+'" role="button" tabindex="'+(soldOut?-1:0)+'" aria-label="'+escapeTicketText(z.name)+', '+(tier?'
+    zones.forEach((z,i)=>{
+      const angle=(-Math.PI/2)+(i/zones.length)*Math.PI*2;
+      const cx=250+Math.cos(angle)*174,cy=230+Math.sin(angle)*166;
+      const rotation=angle*180/Math.PI+90,tier=TIERS[z.ticket_tier_id];
+      const soldOut=!tier||tier.quantity_total<=tier.quantity_sold;
+      const width=zones.length>8?94:zones.length>4?106:118;
+      const label=escapeTicketText(z.name);
+      const price=tier?' · $'+Number(tier.price).toFixed(2):'';
+      const status=soldOut?' · Sold out':' · '+Math.max(0,tier.quantity_total-tier.quantity_sold)+' available';
+      svg+='<g class="seat-zone-group seat-section" data-tier="'+z.ticket_tier_id+'" role="button" tabindex="'+(soldOut?-1:0)+'" aria-label="'+label+price+status+'" style="cursor:'+(soldOut?'not-allowed':'pointer')+'"><g transform="translate('+cx+' '+cy+') rotate('+rotation+')"><rect x="'+(-width/2)+'" y="-23" width="'+width+'" height="46" rx="10" fill="'+z.color+'" fill-opacity="'+(soldOut?'.45':'.95')+'" stroke="'+(soldOut?'#94a3b8':'#ffffff')+'" stroke-width="2"/><text x="0" y="-2" text-anchor="middle" fill="#fff" font-size="11" font-weight="800">'+label+'</text><text x="0" y="13" text-anchor="middle" fill="#fff" font-size="9">'+(soldOut?'SOLD OUT':(tier?'$'+Number(tier.price).toFixed(2):''))+'</text></g></g>';
+    });
     map.innerHTML=svg;
     legend.innerHTML=zones.map(z=>'<span><span class="swatch" style="background:'+z.color+'"></span>'+escapeTicketText(z.name)+'</span>').join('');
   }
