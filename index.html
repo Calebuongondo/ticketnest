@@ -4647,7 +4647,7 @@ $('done-btn').addEventListener('click', () => { closeDrawer(); showView('home');
       if (!token) {
         if (grid) grid.innerHTML = '<div class="empty-tickets"><h3>Sign in to view your tickets</h3><p>Tickets and orders are private to your TicketNest account.</p><button class="btn btn-primary" type="button" data-account-login>Sign in</button></div>';
         if (orderBody) orderBody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:28px;color:var(--muted)">Sign in to view your order history.</td></tr>';
-        TICKETS.splice(0); ORDERS.splice(0); renderAll(); return;
+        TICKETS.splice(0); ORDERS.splice(0); updateStats(); return;
       }
       const headers = { apikey: TICKETNEST_SUPABASE_KEY, Authorization: 'Bearer ' + token, Accept: 'application/json' };
       const [ticketsResponse, ordersResponse] = await Promise.all([
