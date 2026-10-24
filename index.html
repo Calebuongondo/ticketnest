@@ -3687,9 +3687,33 @@ function setTicketQuantity(value){
   $('qty-input').max=String(max);
   updateSummary();
 }
-document.addEventListener('click',e=>{const minus=e.target.closest('#qty-minus'),plus=e.target.closest('#qty-plus');if(!minus&&!plus)return;e.preventDefault();if(!selectedTier){const first=Object.values(TIERS).find(t=>Number(t.quantity_total)>Number(t.quantity_sold));if(first)selectTier(first.id);else{(window.showToast||alert)('Choose an available ticket category first.');return;}}setTicketQuantity(plus?Number(qty)+1:Number(qty)-1)});
-$('qty-input').addEventListener('input',e=>setTicketQuantity(e.target.value));
-$('qty-input').addEventListener('change',e=>setTicketQuantity(e.target.value));
+function ensureQuantityTier(){
+  if(selectedTier&&TIERS[selectedTier])return true;
+  const first=Object.values(TIERS).find(t=>Number(t.quantity_total)>Number(t.quantity_sold));
+  if(!first){(window.showToast||alert)('No available ticket categories. Please choose another event.');return false;}
+  selectTier(first.id);
+  return true;
+}
+const quantityMinusButton=$('qty-minus');
+const quantityPlusButton=$('qty-plus');
+const quantityInput=$('qty-input');
+quantityMinusButton.addEventListener('click',event=>{
+  event.preventDefault();
+  if(!ensureQuantityTier())return;
+  setTicketQuantity(Math.max(1,Number(qty||1)-1));
+});
+quantityPlusButton.addEventListener('click',event=>{
+  event.preventDefault();
+  if(!ensureQuantityTier())return;
+  const tier=TIERS[selectedTier];
+  const maximum=Math.min(8,Math.max(0,Number(tier.quantity_total)-Number(tier.quantity_sold)));
+  if(Number(qty)>=maximum){(window.showToast||alert)('Maximum available quantity is '+maximum+' for this category.');return;}
+  setTicketQuantity(Number(qty||1)+1);
+});
+quantityInput.addEventListener('input',event=>setTicketQuantity(event.target.value));
+quantityInput.addEventListener('change',event=>setTicketQuantity(event.target.value));
+quantityInput.addEventListener('keydown',event=>{if(event.key==='ArrowUp'||event.key==='ArrowDown'){event.stopPropagation();}});
+
 
 /* ==========================================================
    EVENT: CART
@@ -3704,12 +3728,16 @@ function addToCart() {
   if(ticketReservationIds.length) releaseActiveTicketReservations();
   const unit=Number(tier.price)||0,name=tier.name,remaining=Math.max(0,Number(tier.quantity_total)-Number(tier.quantity_sold));
   const requested=Math.max(1,Math.min(8,Number(qty)||1));
-  if(requested>remaining){notify('There are not enough tickets remaining in this category.');return;}
+  if(requested>remaining){notify('Only '+remaining+' ticket(s) remain in this category.');return;}
   const inCart=cart.reduce((sum,item)=>sum+Number(item.qty||0),0);
   if(inCart+requested>8){notify(`Your cart already has ${inCart} tickets. The limit is 8 per order.`);return;}
   const existing=cart.find(item=>item.tierId===tier.id&&item.eventId===activeTicketEvent);
-  if(existing){if(existing.qty+requested>remaining){notify('There are not enough tickets remaining in this category.');return;}existing.qty+=requested;}
-  else cart.push({tierId:tier.id,eventId:activeTicketEvent,tierName:name,unitPrice:unit,qty:requested,color:tier.color||'#6366f1'});
+  if(existing){
+    if(existing.qty+requested>remaining){notify('Only '+remaining+' ticket(s) remain in this category.');return;}
+    existing.qty=Number(existing.qty||0)+requested;
+  }else{
+    cart.push({tierId:tier.id,eventId:activeTicketEvent,tierName:name,unitPrice:unit,qty:requested,color:tier.color||'#6366f1'});
+  }
   updateCartCount();openDrawer(1);
 }
 document.addEventListener('click',e=>{const button=e.target.closest('#add-to-cart-btn, #mobile-cart-btn');if(!button)return;e.preventDefault();if(button.disabled)return;try{addToCart()}catch(error){console.error('TicketNest add-to-cart error:',error);(window.showToast||alert)(error.message||'Could not add tickets. Please try again.')}});
