@@ -3424,6 +3424,11 @@ const arrowSVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" str
 
 function setEventDetails(e) {
   if (!e) return;
+  // Search results and older catalogue cards may omit the database ID; resolve them against live events.
+  if (!e.id && Array.isArray(events)) {
+    const match = events.find(item => String(item.title).trim().toLowerCase() === String(e.title || '').trim().toLowerCase());
+    if (match) e = { ...match, ...e, id: match.id };
+  }
   const v = document.querySelector('[data-view="event"]');
   v.querySelector('h1').textContent = e.title;
   v.querySelector('.subtitle').textContent = `${e.venue} · ${e.category}`;
@@ -3592,6 +3597,8 @@ async function loadEventTicketOptions(eventId){
     if(!Array.isArray(tierRows)||!Array.isArray(zoneRows))throw new Error('Unexpected ticket data response.');
     tierRows.forEach(t=>{const total=Math.max(0,Number(t.quantity_total||0)),sold=Math.max(0,Number(t.quantity_sold||0));if(total>sold)TIERS[t.id]={id:t.id,name:t.name,price:Math.max(0,Number(t.price_usd||0)),color:'#6366f1',quantity_total:total,quantity_sold:sold}});
     activeZones=zoneRows.filter(z=>TIERS[z.ticket_tier_id]&&z.event_id===eventId&&/^#[0-9a-f]{6}$/i.test(z.color||''));
+    // Use the administrator's zone color on the matching ticket category card too.
+    activeZones.forEach(z=>{if(TIERS[z.ticket_tier_id])TIERS[z.ticket_tier_id].color=z.color;});
     renderEventTicketOptions();
   }catch(error){
     $('tier-list').innerHTML='<div class="empty-state"><p>'+escapeTicketText(error.message||'Ticket options could not be loaded.')+'</p><p>Please refresh and try again.</p></div>';
