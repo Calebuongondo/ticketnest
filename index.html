@@ -3687,8 +3687,7 @@ function setTicketQuantity(value){
   $('qty-input').max=String(max);
   updateSummary();
 }
-$('qty-minus').addEventListener('click',()=>setTicketQuantity(qty-1));
-$('qty-plus').addEventListener('click',()=>{if(!selectedTier){const first=Object.values(TIERS).find(t=>t.quantity_total>t.quantity_sold);if(first)selectTier(first.id);else return (window.showToast||alert)('Choose an available ticket category first.');}setTicketQuantity(qty+1)});
+document.addEventListener('click',e=>{const minus=e.target.closest('#qty-minus'),plus=e.target.closest('#qty-plus');if(!minus&&!plus)return;e.preventDefault();if(!selectedTier){const first=Object.values(TIERS).find(t=>Number(t.quantity_total)>Number(t.quantity_sold));if(first)selectTier(first.id);else{(window.showToast||alert)('Choose an available ticket category first.');return;}}setTicketQuantity(plus?Number(qty)+1:Number(qty)-1)});
 $('qty-input').addEventListener('input',e=>setTicketQuantity(e.target.value));
 $('qty-input').addEventListener('change',e=>setTicketQuantity(e.target.value));
 
@@ -3713,8 +3712,7 @@ function addToCart() {
   else cart.push({tierId:tier.id,eventId:activeTicketEvent,tierName:name,unitPrice:unit,qty:requested,color:tier.color||'#6366f1'});
   updateCartCount();openDrawer(1);
 }
-$('add-to-cart-btn').addEventListener('click', addToCart);
-$('mobile-cart-btn').addEventListener('click', addToCart);
+document.addEventListener('click',e=>{const button=e.target.closest('#add-to-cart-btn, #mobile-cart-btn');if(!button)return;e.preventDefault();if(button.disabled)return;try{addToCart()}catch(error){console.error('TicketNest add-to-cart error:',error);(window.showToast||alert)(error.message||'Could not add tickets. Please try again.')}});
 
 function updateCartCount() {
   const count = cart.reduce((s, i) => s + i.qty, 0);
@@ -5699,6 +5697,15 @@ $('done-btn').addEventListener('click', () => { closeDrawer(); showView('home');
       if (!tiers.length) tiers = await get('ticket_tiers', {select:'id,event_id,name,price_usd,quantity_total,quantity_sold', event_id:'eq.' + event.id, order:'created_at.asc'});
       if (!zones.length) zones = await get('event_seating_zones', {select:'id,event_id,ticket_tier_id,name,color,display_order,position_x,position_y,width_percent', event_id:'eq.' + event.id, order:'display_order.asc'});
       const available = tiers.filter(t => Number(t.quantity_total || 0) > Number(t.quantity_sold || 0));
+      // Keep the fallback widget connected to the same live state used by quantity and cart controls.
+      if (typeof renderEventTicketOptions === 'function' && typeof selectTier === 'function') {
+        activeTicketEvent = event.id;
+        TIERS = {};
+        available.forEach(t => { const z = zones.find(item => item.ticket_tier_id === t.id); TIERS[t.id] = { id:t.id, name:t.name, price:Number(t.price_usd || 0), color:z && /^#[0-9a-f]{6}$/i.test(z.color || '') ? z.color : '#6366f1', quantity_total:Number(t.quantity_total || 0), quantity_sold:Number(t.quantity_sold || 0) }; });
+        activeZones = zones.filter(z => TIERS[z.ticket_tier_id] && /^#[0-9a-f]{6}$/i.test(z.color || ''));
+        renderEventTicketOptions();
+        return;
+      }
       if (!available.length) {
         list.innerHTML = '<div class="empty-state"><p>No available ticket categories are configured for this event.</p></div>';
         map.innerHTML = '<rect class="stage" x="150" y="10" width="200" height="34" rx="6"/><text class="stage-text" x="250" y="32">STAGE</text><text x="250" y="230" text-anchor="middle" fill="currentColor" font-size="13">No available tickets</text>';
@@ -7732,6 +7739,15 @@ $('done-btn').addEventListener('click', () => { closeDrawer(); showView('home');
       if (!tiers.length) tiers = await get('ticket_tiers', {select:'id,event_id,name,price_usd,quantity_total,quantity_sold', event_id:'eq.' + event.id, order:'created_at.asc'});
       if (!zones.length) zones = await get('event_seating_zones', {select:'id,event_id,ticket_tier_id,name,color,display_order,position_x,position_y,width_percent', event_id:'eq.' + event.id, order:'display_order.asc'});
       const available = tiers.filter(t => Number(t.quantity_total || 0) > Number(t.quantity_sold || 0));
+      // Keep the fallback widget connected to the same live state used by quantity and cart controls.
+      if (typeof renderEventTicketOptions === 'function' && typeof selectTier === 'function') {
+        activeTicketEvent = event.id;
+        TIERS = {};
+        available.forEach(t => { const z = zones.find(item => item.ticket_tier_id === t.id); TIERS[t.id] = { id:t.id, name:t.name, price:Number(t.price_usd || 0), color:z && /^#[0-9a-f]{6}$/i.test(z.color || '') ? z.color : '#6366f1', quantity_total:Number(t.quantity_total || 0), quantity_sold:Number(t.quantity_sold || 0) }; });
+        activeZones = zones.filter(z => TIERS[z.ticket_tier_id] && /^#[0-9a-f]{6}$/i.test(z.color || ''));
+        renderEventTicketOptions();
+        return;
+      }
       if (!available.length) {
         list.innerHTML = '<div class="empty-state"><p>No available ticket categories are configured for this event.</p></div>';
         map.innerHTML = '<rect class="stage" x="150" y="10" width="200" height="34" rx="6"/><text class="stage-text" x="250" y="32">STAGE</text><text x="250" y="230" text-anchor="middle" fill="currentColor" font-size="13">No available tickets</text>';
@@ -9767,6 +9783,15 @@ $('done-btn').addEventListener('click', () => { closeDrawer(); showView('home');
       if (!tiers.length) tiers = await get('ticket_tiers', {select:'id,event_id,name,price_usd,quantity_total,quantity_sold', event_id:'eq.' + event.id, order:'created_at.asc'});
       if (!zones.length) zones = await get('event_seating_zones', {select:'id,event_id,ticket_tier_id,name,color,display_order,position_x,position_y,width_percent', event_id:'eq.' + event.id, order:'display_order.asc'});
       const available = tiers.filter(t => Number(t.quantity_total || 0) > Number(t.quantity_sold || 0));
+      // Keep the fallback widget connected to the same live state used by quantity and cart controls.
+      if (typeof renderEventTicketOptions === 'function' && typeof selectTier === 'function') {
+        activeTicketEvent = event.id;
+        TIERS = {};
+        available.forEach(t => { const z = zones.find(item => item.ticket_tier_id === t.id); TIERS[t.id] = { id:t.id, name:t.name, price:Number(t.price_usd || 0), color:z && /^#[0-9a-f]{6}$/i.test(z.color || '') ? z.color : '#6366f1', quantity_total:Number(t.quantity_total || 0), quantity_sold:Number(t.quantity_sold || 0) }; });
+        activeZones = zones.filter(z => TIERS[z.ticket_tier_id] && /^#[0-9a-f]{6}$/i.test(z.color || ''));
+        renderEventTicketOptions();
+        return;
+      }
       if (!available.length) {
         list.innerHTML = '<div class="empty-state"><p>No available ticket categories are configured for this event.</p></div>';
         map.innerHTML = '<rect class="stage" x="150" y="10" width="200" height="34" rx="6"/><text class="stage-text" x="250" y="32">STAGE</text><text x="250" y="230" text-anchor="middle" fill="currentColor" font-size="13">No available tickets</text>';
