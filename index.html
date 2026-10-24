@@ -3610,10 +3610,11 @@ function renderEventTicketOptions(){
     }
     zones.forEach((z,i)=>{
       const angle=(-Math.PI/2)+(i/zones.length)*Math.PI*2;
-      const cx=250+Math.cos(angle)*174,cy=230+Math.sin(angle)*166;
-      const rotation=angle*180/Math.PI+90,tier=TIERS[z.ticket_tier_id];
+      const positioned=z.position_x!==null&&z.position_x!==undefined&&z.position_y!==null&&z.position_y!==undefined;
+      const cx=positioned?12+Number(z.position_x)*4.76:250+Math.cos(angle)*174,cy=positioned?8+Number(z.position_y)*4.24:230+Math.sin(angle)*166;
+      const rotation=positioned?0:angle*180/Math.PI+90,tier=TIERS[z.ticket_tier_id];
       const soldOut=!tier||tier.quantity_total<=tier.quantity_sold;
-      const width=zones.length>8?94:zones.length>4?106:118;
+      const width=positioned?Math.max(50,Math.min(214,Number(z.width_percent||24)*4.76)):(zones.length>8?94:zones.length>4?106:118);
       const label=escapeTicketText(z.name);
       const price=tier?' · $'+Number(tier.price).toFixed(2):'';
       const status=soldOut?' · Sold out':' · '+Math.max(0,tier.quantity_total-tier.quantity_sold)+' available';
@@ -3631,7 +3632,7 @@ async function loadEventTicketOptions(eventId){
   if(!eventId){renderEventTicketOptions();return}
   const headers={apikey:TICKETNEST_SUPABASE_KEY,Authorization:'Bearer '+TICKETNEST_SUPABASE_KEY,Accept:'application/json'};
   const tierUrl=new URL(TICKETNEST_SUPABASE_URL+'/rest/v1/ticket_tiers');tierUrl.searchParams.set('select','id,event_id,name,price_usd,quantity_total,quantity_sold');tierUrl.searchParams.set('event_id','eq.'+eventId);tierUrl.searchParams.set('order','created_at.asc');
-  const zoneUrl=new URL(TICKETNEST_SUPABASE_URL+'/rest/v1/event_seating_zones');zoneUrl.searchParams.set('select','id,event_id,ticket_tier_id,name,color,display_order');zoneUrl.searchParams.set('event_id','eq.'+eventId);zoneUrl.searchParams.set('order','display_order.asc');
+  const zoneUrl=new URL(TICKETNEST_SUPABASE_URL+'/rest/v1/event_seating_zones');zoneUrl.searchParams.set('select','id,event_id,ticket_tier_id,name,color,display_order,position_x,position_y,width_percent');zoneUrl.searchParams.set('event_id','eq.'+eventId);zoneUrl.searchParams.set('order','display_order.asc');
   try{
     const [tr,zr]=await Promise.all([fetch(tierUrl,{headers,cache:'no-store'}),fetch(zoneUrl,{headers,cache:'no-store'})]);
     if(!tr.ok)throw new Error('Could not load ticket categories ('+tr.status+').');
@@ -5572,7 +5573,7 @@ $('done-btn').addEventListener('click', () => { closeDrawer(); showView('home');
       if (event) {
         [tiers, zones] = await Promise.all([
           get('ticket_tiers', {select:'id,event_id,name,price_usd,quantity_total,quantity_sold', event_id:'eq.' + event.id, order:'created_at.asc'}),
-          get('event_seating_zones', {select:'id,event_id,ticket_tier_id,name,color,display_order', event_id:'eq.' + event.id, order:'display_order.asc'})
+          get('event_seating_zones', {select:'id,event_id,ticket_tier_id,name,color,display_order,position_x,position_y,width_percent', event_id:'eq.' + event.id, order:'display_order.asc'})
         ]);
       }
       if (!event || !zones.length || !tiers.length) {
@@ -5581,7 +5582,7 @@ $('done-btn').addEventListener('click', () => { closeDrawer(); showView('home');
         for (const candidate of candidates) {
           const [candidateTiers, candidateZones] = await Promise.all([
             get('ticket_tiers', {select:'id,event_id,name,price_usd,quantity_total,quantity_sold', event_id:'eq.' + candidate.id, order:'created_at.asc'}),
-            get('event_seating_zones', {select:'id,event_id,ticket_tier_id,name,color,display_order', event_id:'eq.' + candidate.id, order:'display_order.asc'})
+            get('event_seating_zones', {select:'id,event_id,ticket_tier_id,name,color,display_order,position_x,position_y,width_percent', event_id:'eq.' + candidate.id, order:'display_order.asc'})
           ]);
           if (candidateZones.some(z => candidateTiers.some(t => t.id === z.ticket_tier_id))) {
             best = {event:candidate, tiers:candidateTiers, zones:candidateZones};
@@ -5592,7 +5593,7 @@ $('done-btn').addEventListener('click', () => { closeDrawer(); showView('home');
       }
       if (!event) throw new Error('No published events were returned by Supabase. Check event publication and public read permissions.');
       if (!tiers.length) tiers = await get('ticket_tiers', {select:'id,event_id,name,price_usd,quantity_total,quantity_sold', event_id:'eq.' + event.id, order:'created_at.asc'});
-      if (!zones.length) zones = await get('event_seating_zones', {select:'id,event_id,ticket_tier_id,name,color,display_order', event_id:'eq.' + event.id, order:'display_order.asc'});
+      if (!zones.length) zones = await get('event_seating_zones', {select:'id,event_id,ticket_tier_id,name,color,display_order,position_x,position_y,width_percent', event_id:'eq.' + event.id, order:'display_order.asc'});
       const available = tiers.filter(t => Number(t.quantity_total || 0) > Number(t.quantity_sold || 0));
       if (!available.length) {
         list.innerHTML = '<div class="empty-state"><p>No available ticket categories are configured for this event.</p></div>';
@@ -5654,7 +5655,7 @@ async function loadEventTicketOptions(eventId){
   if(!eventId){renderEventTicketOptions();return}
   const headers={apikey:TICKETNEST_SUPABASE_KEY,Authorization:'Bearer '+TICKETNEST_SUPABASE_KEY,Accept:'application/json'};
   const tierUrl=new URL(TICKETNEST_SUPABASE_URL+'/rest/v1/ticket_tiers');tierUrl.searchParams.set('select','id,event_id,name,price_usd,quantity_total,quantity_sold');tierUrl.searchParams.set('event_id','eq.'+eventId);tierUrl.searchParams.set('order','created_at.asc');
-  const zoneUrl=new URL(TICKETNEST_SUPABASE_URL+'/rest/v1/event_seating_zones');zoneUrl.searchParams.set('select','id,event_id,ticket_tier_id,name,color,display_order');zoneUrl.searchParams.set('event_id','eq.'+eventId);zoneUrl.searchParams.set('order','display_order.asc');
+  const zoneUrl=new URL(TICKETNEST_SUPABASE_URL+'/rest/v1/event_seating_zones');zoneUrl.searchParams.set('select','id,event_id,ticket_tier_id,name,color,display_order,position_x,position_y,width_percent');zoneUrl.searchParams.set('event_id','eq.'+eventId);zoneUrl.searchParams.set('order','display_order.asc');
   try{
     const [tr,zr]=await Promise.all([fetch(tierUrl,{headers,cache:'no-store'}),fetch(zoneUrl,{headers,cache:'no-store'})]);
     if(!tr.ok)throw new Error('Could not load ticket categories ('+tr.status+').');
@@ -7595,7 +7596,7 @@ $('done-btn').addEventListener('click', () => { closeDrawer(); showView('home');
       if (event) {
         [tiers, zones] = await Promise.all([
           get('ticket_tiers', {select:'id,event_id,name,price_usd,quantity_total,quantity_sold', event_id:'eq.' + event.id, order:'created_at.asc'}),
-          get('event_seating_zones', {select:'id,event_id,ticket_tier_id,name,color,display_order', event_id:'eq.' + event.id, order:'display_order.asc'})
+          get('event_seating_zones', {select:'id,event_id,ticket_tier_id,name,color,display_order,position_x,position_y,width_percent', event_id:'eq.' + event.id, order:'display_order.asc'})
         ]);
       }
       if (!event || !zones.length || !tiers.length) {
@@ -7604,7 +7605,7 @@ $('done-btn').addEventListener('click', () => { closeDrawer(); showView('home');
         for (const candidate of candidates) {
           const [candidateTiers, candidateZones] = await Promise.all([
             get('ticket_tiers', {select:'id,event_id,name,price_usd,quantity_total,quantity_sold', event_id:'eq.' + candidate.id, order:'created_at.asc'}),
-            get('event_seating_zones', {select:'id,event_id,ticket_tier_id,name,color,display_order', event_id:'eq.' + candidate.id, order:'display_order.asc'})
+            get('event_seating_zones', {select:'id,event_id,ticket_tier_id,name,color,display_order,position_x,position_y,width_percent', event_id:'eq.' + candidate.id, order:'display_order.asc'})
           ]);
           if (candidateZones.some(z => candidateTiers.some(t => t.id === z.ticket_tier_id))) {
             best = {event:candidate, tiers:candidateTiers, zones:candidateZones};
@@ -7615,7 +7616,7 @@ $('done-btn').addEventListener('click', () => { closeDrawer(); showView('home');
       }
       if (!event) throw new Error('No published events were returned by Supabase. Check event publication and public read permissions.');
       if (!tiers.length) tiers = await get('ticket_tiers', {select:'id,event_id,name,price_usd,quantity_total,quantity_sold', event_id:'eq.' + event.id, order:'created_at.asc'});
-      if (!zones.length) zones = await get('event_seating_zones', {select:'id,event_id,ticket_tier_id,name,color,display_order', event_id:'eq.' + event.id, order:'display_order.asc'});
+      if (!zones.length) zones = await get('event_seating_zones', {select:'id,event_id,ticket_tier_id,name,color,display_order,position_x,position_y,width_percent', event_id:'eq.' + event.id, order:'display_order.asc'});
       const available = tiers.filter(t => Number(t.quantity_total || 0) > Number(t.quantity_sold || 0));
       if (!available.length) {
         list.innerHTML = '<div class="empty-state"><p>No available ticket categories are configured for this event.</p></div>';
@@ -7679,7 +7680,7 @@ async function loadEventTicketOptions(eventId){
   if(!eventId){renderEventTicketOptions();return}
   const headers={apikey:TICKETNEST_SUPABASE_KEY,Authorization:'Bearer '+TICKETNEST_SUPABASE_KEY,Accept:'application/json'};
   const tierUrl=new URL(TICKETNEST_SUPABASE_URL+'/rest/v1/ticket_tiers');tierUrl.searchParams.set('select','id,event_id,name,price_usd,quantity_total,quantity_sold');tierUrl.searchParams.set('event_id','eq.'+eventId);tierUrl.searchParams.set('order','created_at.asc');
-  const zoneUrl=new URL(TICKETNEST_SUPABASE_URL+'/rest/v1/event_seating_zones');zoneUrl.searchParams.set('select','id,event_id,ticket_tier_id,name,color,display_order');zoneUrl.searchParams.set('event_id','eq.'+eventId);zoneUrl.searchParams.set('order','display_order.asc');
+  const zoneUrl=new URL(TICKETNEST_SUPABASE_URL+'/rest/v1/event_seating_zones');zoneUrl.searchParams.set('select','id,event_id,ticket_tier_id,name,color,display_order,position_x,position_y,width_percent');zoneUrl.searchParams.set('event_id','eq.'+eventId);zoneUrl.searchParams.set('order','display_order.asc');
   try{
     const [tr,zr]=await Promise.all([fetch(tierUrl,{headers,cache:'no-store'}),fetch(zoneUrl,{headers,cache:'no-store'})]);
     if(!tr.ok)throw new Error('Could not load ticket categories ('+tr.status+').');
@@ -9620,7 +9621,7 @@ $('done-btn').addEventListener('click', () => { closeDrawer(); showView('home');
       if (event) {
         [tiers, zones] = await Promise.all([
           get('ticket_tiers', {select:'id,event_id,name,price_usd,quantity_total,quantity_sold', event_id:'eq.' + event.id, order:'created_at.asc'}),
-          get('event_seating_zones', {select:'id,event_id,ticket_tier_id,name,color,display_order', event_id:'eq.' + event.id, order:'display_order.asc'})
+          get('event_seating_zones', {select:'id,event_id,ticket_tier_id,name,color,display_order,position_x,position_y,width_percent', event_id:'eq.' + event.id, order:'display_order.asc'})
         ]);
       }
       if (!event || !zones.length || !tiers.length) {
@@ -9629,7 +9630,7 @@ $('done-btn').addEventListener('click', () => { closeDrawer(); showView('home');
         for (const candidate of candidates) {
           const [candidateTiers, candidateZones] = await Promise.all([
             get('ticket_tiers', {select:'id,event_id,name,price_usd,quantity_total,quantity_sold', event_id:'eq.' + candidate.id, order:'created_at.asc'}),
-            get('event_seating_zones', {select:'id,event_id,ticket_tier_id,name,color,display_order', event_id:'eq.' + candidate.id, order:'display_order.asc'})
+            get('event_seating_zones', {select:'id,event_id,ticket_tier_id,name,color,display_order,position_x,position_y,width_percent', event_id:'eq.' + candidate.id, order:'display_order.asc'})
           ]);
           if (candidateZones.some(z => candidateTiers.some(t => t.id === z.ticket_tier_id))) {
             best = {event:candidate, tiers:candidateTiers, zones:candidateZones};
@@ -9640,7 +9641,7 @@ $('done-btn').addEventListener('click', () => { closeDrawer(); showView('home');
       }
       if (!event) throw new Error('No published events were returned by Supabase. Check event publication and public read permissions.');
       if (!tiers.length) tiers = await get('ticket_tiers', {select:'id,event_id,name,price_usd,quantity_total,quantity_sold', event_id:'eq.' + event.id, order:'created_at.asc'});
-      if (!zones.length) zones = await get('event_seating_zones', {select:'id,event_id,ticket_tier_id,name,color,display_order', event_id:'eq.' + event.id, order:'display_order.asc'});
+      if (!zones.length) zones = await get('event_seating_zones', {select:'id,event_id,ticket_tier_id,name,color,display_order,position_x,position_y,width_percent', event_id:'eq.' + event.id, order:'display_order.asc'});
       const available = tiers.filter(t => Number(t.quantity_total || 0) > Number(t.quantity_sold || 0));
       if (!available.length) {
         list.innerHTML = '<div class="empty-state"><p>No available ticket categories are configured for this event.</p></div>';
