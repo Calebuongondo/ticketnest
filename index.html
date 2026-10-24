@@ -3947,7 +3947,8 @@ $('drawer-close').addEventListener('click', closeDrawer);
 $('drawer-overlay').addEventListener('click', closeDrawer);
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDrawer(); });
 
-$('header-cart-btn').addEventListener('click', () => openDrawer(1));
+$('header-cart-btn').addEventListener('click', (event) => { event.preventDefault(); renderCart(); openDrawer(1); });
+window.openTicketNestCart = function () { renderCart(); openDrawer(1); };
 
 let ticketReservationIds = [];
 let reservationExpiresAt = null;
@@ -3981,6 +3982,7 @@ async function reserveCartInventory() {
   try {
     const accessToken = window.ticketNestGetAccessToken ? await window.ticketNestGetAccessToken() : null;
     if (!accessToken) {
+      window.ticketNestCheckoutAuthPending = true;
       if (window.ticketNestOpenAuth) window.ticketNestOpenAuth('login');
       throw new Error('Please sign in or create a TicketNest account to reserve tickets. Your cart will remain saved on this page.');
     }
@@ -5776,7 +5778,12 @@ $('done-btn').addEventListener('click', () => { closeDrawer(); showView('home');
      if (!session.access_token || !session.user) throw new Error('Sign-in did not return a session. Please try again.');
      saveSession(session, document.getElementById('auth-remember').checked);
      setAccountUser(session.user);
-     showAccount();
+     if (window.ticketNestCheckoutAuthPending) {
+       window.ticketNestCheckoutAuthPending = false;
+       close();
+       if (typeof window.openTicketNestCart === 'function') window.openTicketNestCart();
+       else { const cartButton = document.getElementById('header-cart-btn'); if (cartButton) cartButton.click(); }
+     } else showAccount();
    });
  });
 
@@ -5797,7 +5804,12 @@ $('done-btn').addEventListener('click', () => { closeDrawer(); showView('home');
      if (result.access_token && result.user) {
        saveSession(result, false);
        setAccountUser(result.user);
-       showAccount();
+       if (window.ticketNestCheckoutAuthPending) {
+         window.ticketNestCheckoutAuthPending = false;
+         close();
+         if (typeof window.openTicketNestCart === 'function') window.openTicketNestCart();
+         else { const cartButton = document.getElementById('header-cart-btn'); if (cartButton) cartButton.click(); }
+       } else showAccount();
      } else {
        message('signup', 'Your registration request was accepted. Check your email inbox and spam folder for a confirmation link, then return here to sign in.', 'success');
      }
