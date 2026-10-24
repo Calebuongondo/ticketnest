@@ -148,7 +148,8 @@ $('eventForm').onsubmit=async e=>{
     if(!Number.isFinite(price)||price<0)throw new Error('Please enter a valid event price.');
     const payload={title:$('title').value.trim(),venue:$('venue').value.trim(),city:$('city').value.trim(),starts_at:new Date(startsAtValue).toISOString(),category:$('category').value,price_usd:price,currency:'USD',status:$('status').value,image_url:imageUrl,description:$('description').value.trim()};
     if(!payload.title||!payload.venue||!payload.city)throw new Error('Please complete the event title, venue and city.');
-    if(payload.status==='published'){if(!id)throw new Error('Save this event as Draft first, add a ticket category with available quantity, then publish it.');await assertEventHasInventory(id);}
+    const currentEvent=events.find(event=>event.id===id);
+    if(payload.status==='published'&&(!id||currentEvent?.status!=='published')){if(!id)throw new Error('Save this event as Draft first, add a ticket category with available quantity, then publish it.');await assertEventHasInventory(id);}
     const result=id?await db.from('events').update(payload).eq('id',id).select().single():await db.from('events').insert({...payload,created_by:user.id}).select().single();
     if(result.error)throw result.error;
     note('editorNotice',id?'Event updated successfully.':'Event created successfully.','ok');
