@@ -3515,7 +3515,8 @@ function closeTicketQuantitySheet() {
   document.addEventListener('keydown', event => { if (event.key === 'Escape') closeTicketQuantitySheet(); });
   window.ticketNestOpenQuantitySheet = openTicketQuantitySheet;
 })();
-\nfunction setEventDetails(e) {
+
+function setEventDetails(e) {
   if (!e) return;
   activeVenueLayout = e.venue_layout || 'football_stadium';
   activeVenueMapImage = e.venue_map_image_url || '';
