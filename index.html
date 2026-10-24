@@ -4864,8 +4864,8 @@ $('done-btn').addEventListener('click', () => { closeDrawer(); showView('home');
             : `<button disabled title="Not sellable">Sell</button>`}
         </div>
         <div class="wallet-row">
-          <button class="apple" onclick="showToast('Added to Apple Wallet')">Wallet</button>
-          <button class="google" onclick="showToast('Added to Google Wallet')">Google</button>
+          <button class="apple" type="button" onclick="showToast('Apple Wallet passes are not configured yet. Your ticket remains available in My Tickets.')">Apple Wallet unavailable</button>
+          <button class="google" type="button" onclick="showToast('Google Wallet passes are not configured yet. Your ticket remains available in My Tickets.')">Google Wallet unavailable</button>
         </div>
       </div>
     </article>`;
