@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>TicketNest — Buy & Sell Tickets for Concerts, Sports, Theater & More</title>
-<meta name="description" content="Discover concerts, sports, theatre, comedy, and live experiences with TicketNest. Event listings and ticketing will be enabled as the catalogue is connected." />
+<meta name="description" content="Discover upcoming concerts, sports, theatre, comedy, and live experiences with TicketNest. Explore published events, compare details, and plan your next outing." />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -1384,7 +1384,7 @@ body[data-theme="dark"] .auth-demo-note{border-top-color:#2b3545;color:#8f9bad}
       <div class="hero-content">
         <span class="hero-tag"><span class="pulse"></span> Discover live experiences</span>
         <h1>Your next live<br/><em>experience awaits</em></h1>
-        <p class="hero-sub">Explore concerts, sports, theatre, comedy, and more. Event listings will appear here once they are published by the TicketNest team.</p>
+        <p class="hero-sub">Discover concerts, sports, theatre, comedy, and unforgettable live experiences. Browse published events and explore event details on TicketNest.</p>
 
         <div class="hero-actions">
           <a href="#search" class="btn btn-primary btn-xl" data-go="search">
@@ -1435,7 +1435,7 @@ body[data-theme="dark"] .auth-demo-note{border-top-color:#2b3545;color:#8f9bad}
         <div>
           <span class="section-eyebrow">Event discovery</span>
           <h2>Upcoming events</h2>
-          <p>Events will appear here once they are published through the TicketNest event catalogue.</p>
+          <p>Explore upcoming experiences, compare event details, and plan your next outing.</p>
         </div>
         <a href="#search" class="see-all" data-go="search">See all events
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
@@ -2217,7 +2217,7 @@ body[data-theme="dark"] .auth-demo-note{border-top-color:#2b3545;color:#8f9bad}
     <button type="button" data-menu-go="account" data-account-tab="favorites"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21.2l7.8-7.8 1.1-1.1a5.5 5.5 0 0 0-.1-7.7z"/></svg>Favorites</button>
     <button type="button" data-menu-go="account" data-account-tab="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="m19.4 15 .1.1 1.4 1.1-1.4 2.4-1.7-.6a8 8 0 0 1-1.7 1l-.3 1.8h-2.8l-.3-1.8a8 8 0 0 1-1.7-1l-1.7.6-1.4-2.4 1.4-1.1a7 7 0 0 1 0-2l-1.4-1.1 1.4-2.4 1.7.6a8 8 0 0 1 1.7-1l.3-1.8h2.8l.3 1.8a8 8 0 0 1 1.7 1l1.7-.6 1.4 2.4-1.4 1.1a7 7 0 0 1 0 2z"/></svg>Account settings</button>
   </nav>
-  <div class="site-menu-note">TicketNest preview · Event listings, ticket inventory, account sync, and checkout will activate when the backend is connected.</div>
+  <div class="site-menu-note">TicketNest event discovery · Secure checkout and live ticket inventory will be enabled after payment and order verification are connected.</div>
 </aside>
 
 <script>
@@ -2360,6 +2360,8 @@ async function loadPublishedEvents(options = {}) {
     const url = new URL(`${TICKETNEST_SUPABASE_URL}/rest/v1/events`);
     url.searchParams.set('select', 'id,title,venue,city,starts_at,category,price_usd,currency,status,image_url,description');
     url.searchParams.set('status', 'eq.published');
+    // Keep the public catalogue focused on upcoming events; historical listings should not be sold as current.
+    url.searchParams.set('starts_at', `gte.${new Date().toISOString()}`);
     url.searchParams.set('order', 'starts_at.asc');
 
     const response = await fetch(url.toString(), {
