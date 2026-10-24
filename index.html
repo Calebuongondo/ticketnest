@@ -3529,6 +3529,7 @@ function closeTicketQuantitySheet() {
       (window.showToast || alert)(requested >= 6 ? 'No listings currently have 6 or more tickets available. Choose another quantity.' : 'No listings currently have ' + requested + ' tickets available. Please choose another quantity.');
     } else {
       const first = available[0];
+      selectTier(first.id);
       setTicketQuantity(requested >= 6 ? Math.min(6, Math.max(1, Number(first.quantity_total) - Number(first.quantity_sold))) : requested);
       if (list) list.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
