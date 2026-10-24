@@ -6127,5 +6127,81 @@ $('done-btn').addEventListener('click', () => { closeDrawer(); showView('home');
     <p class="tnq-note">Available ticket options depend on the event.</p>
   </section>
 </div>
-\n</body>
+\n
+<script>
+/* Live transfer and resale activity. The server function authenticates every action. */
+(function () {
+  const url = 'https://pqsnukgwqvjrsuuqlalz.supabase.co/functions/v1/ticket-transfer-resale';
+  const key = 'sb_publishable_Tq_IzpwKECCoDg5nVqZC-A_S0XGlv5B';
+  const esc = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  let loaded = false;
+  async function request(payload) {
+    const token = window.ticketNestGetAccessToken && await window.ticketNestGetAccessToken();
+    if (!token) throw new Error('Sign in to manage transfers and resale.');
+    const res = await fetch(url, {method:'POST', headers:{apikey:key,Authorization:'Bearer '+token,'Content-Type':'application/json'}, body:JSON.stringify(payload)});
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Request failed.');
+    return data;
+  }
+  function section(title, items, kind) {
+    let html = '<h3 style="margin:18px 0 10px">'+title+'</h3>';
+    if (!items.length) return html + '<p style="color:var(--muted);padding:10px 0">Nothing here yet.</p>';
+    return html + items.map(item => {
+      const ev = item.ticket && item.ticket.event || {};
+      const name = ev.title || 'Ticket';
+      const date = ev.starts_at ? new Date(ev.starts_at).toLocaleString() : 'Date to be announced';
+      let actions = '';
+      if (kind === 'received' && item.status === 'pending') actions = '<button class="btn btn-primary" data-tn-transfer-action="accept" data-id="'+esc(item.id)+'">Accept</button> <button class="btn btn-outline" data-tn-transfer-action="decline" data-id="'+esc(item.id)+'">Decline</button>';
+      if (kind === 'sent' && item.status === 'pending') actions = '<button class="btn btn-outline" data-tn-transfer-action="cancel" data-id="'+esc(item.id)+'">Cancel transfer</button>';
+      if (kind === 'listing' && item.status === 'active') actions = '<button class="btn btn-outline" data-tn-listing-action="withdraw" data-id="'+esc(item.id)+'">Withdraw listing</button>';
+      const price = kind === 'listing' ? '<p style="margin-top:6px;font-weight:700">'+esc(item.currency || 'USD')+' '+Number(item.asking_price || 0).toFixed(2)+'</p>' : '';
+      return '<article style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;padding:14px;margin:10px 0;border:1px solid var(--line);border-radius:12px;background:var(--surface)"><div><strong>'+esc(name)+'</strong><div style="font-size:13px;color:var(--muted)">'+esc(ev.venue || '')+' · '+esc(date)+'</div>'+price+'</div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="transfer-status '+esc(item.status)+'">'+esc(item.status)+'</span>'+actions+'</div></article>';
+    }).join('');
+  }
+  async function load() {
+    const pane = document.getElementById('pane-transfers');
+    if (!pane) return;
+    let host = document.getElementById('tn-live-transfer-activity');
+    if (!host) { host=document.createElement('div'); host.id='tn-live-transfer-activity'; host.style.marginTop='20px'; pane.appendChild(host); }
+    host.innerHTML='<p style="color:var(--muted)">Loading live transfer and resale activity…</p>';
+    try {
+      const data = await request({action:'my_activity'});
+      host.innerHTML = '<h2>Live transfers and resale</h2><p style="color:var(--muted)">Transfers change ticket ownership only when the recipient accepts. Resale listings are advertisements only; buyer checkout and seller payouts are not enabled yet.</p>' +
+        section('Incoming transfers',data.received || [],'received') +
+        section('Outgoing transfers',data.sent || [],'sent') +
+        section('Your resale listings',data.listings || [],'listing');
+      loaded = true;
+    } catch (error) { host.innerHTML='<p style="color:var(--danger)">'+esc(error.message)+'</p><button type="button" class="btn btn-outline" data-tn-refresh>Try again</button>'; }
+  }
+  document.addEventListener('click', async e => {
+    const tab = e.target.closest('.account-nav a[data-tab="transfers"]');
+    if (tab) { loaded=false; setTimeout(load,100); }
+    if (e.target.closest('[data-tn-refresh]')) { load(); return; }
+    const transfer = e.target.closest('[data-tn-transfer-action]');
+    const listing = e.target.closest('[data-tn-listing-action]');
+    if (!transfer && !listing) return;
+    const btn = transfer || listing;
+    btn.disabled = true;
+    try {
+      let payload;
+      if (transfer) {
+        const action = transfer.dataset.tnTransferAction;
+        payload = action === 'accept' || action === 'decline'
+          ? {action:'respond_transfer',transfer_id:transfer.dataset.id,decision:action}
+          : {action:'cancel_transfer',transfer_id:transfer.dataset.id};
+      } else payload={action:'withdraw_listing',listing_id:listing.dataset.id};
+      const result=await request(payload);
+      if (typeof window.showToast==='function') window.showToast(result.message || 'Updated.');
+      await load();
+      if (window.ticketNestLoadAccountData) await window.ticketNestLoadAccountData();
+    } catch(error) {
+      if (typeof window.showToast==='function') window.showToast(error.message || 'Action failed.');
+      btn.disabled=false;
+    }
+  });
+  window.addEventListener('ticketnest:auth-changed',()=>{loaded=false;});
+})();
+</script>
+
+</body>
 </html>
