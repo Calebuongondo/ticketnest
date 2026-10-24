@@ -5779,6 +5779,41 @@ $('done-btn').addEventListener('click', () => { closeDrawer(); showView('home');
 })();
 </script>
 
+<!-- TicketNest cart button recovery: independent of the main checkout script. -->
+<script>
+(function () {
+  function openTicketNestCart() {
+    var drawer = document.getElementById('drawer');
+    var overlay = document.getElementById('drawer-overlay');
+    if (!drawer || !overlay) {
+      console.error('TicketNest cart could not open: drawer markup is missing.');
+      return;
+    }
+    try {
+      if (typeof renderCart === 'function') renderCart();
+    } catch (error) {
+      console.error('TicketNest cart contents could not render:', error);
+    }
+    drawer.classList.add('open');
+    overlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    try {
+      if (typeof goToStep === 'function') goToStep(1);
+    } catch (error) {
+      console.error('TicketNest checkout step could not render:', error);
+    }
+  }
+
+  document.addEventListener('click', function (event) {
+    var button = event.target && event.target.closest ? event.target.closest('#header-cart-btn') : null;
+    if (!button) return;
+    event.preventDefault();
+    openTicketNestCart();
+  }, true);
+
+  window.ticketNestOpenCart = openTicketNestCart;
+})();
+</script>
 </body>
 </html>
 +tier.price.toFixed(2):'unavailable')+'" transform="translate('+cx+' '+cy+') rotate('+rotation+')" style="cursor:'+(soldOut?'not-allowed':'pointer')+';opacity:'+(soldOut?'.45':'1')+'"><rect class="seat-section" data-tier="'+z.ticket_tier_id+'" x="'+(-cellW/2)+'" y="'+(-cellH/2)+'" width="'+cellW+'" height="'+cellH+'" rx="14" style="fill:'+z.color+';fill-opacity:.94;stroke:#fff;stroke-width:2"/><text class="seat-label" x="0" y="-5" text-anchor="middle" transform="rotate('+(-rotation)+')" style="fill:#fff;paint-order:stroke;stroke:#172033;stroke-width:2px;stroke-linejoin:round">'+escapeTicketText(z.name).slice(0,24)+'</text><text class="seat-label" x="0" y="12" text-anchor="middle" transform="rotate('+(-rotation)+')" style="fill:#fff;paint-order:stroke;stroke:#172033;stroke-width:2px;stroke-linejoin:round">'+(tier?'
