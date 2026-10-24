@@ -2671,7 +2671,8 @@ body[data-theme="dark"] .auth-demo-note{border-top-color:#2b3545;color:#8f9bad}
 
       <div class="drawer-step" data-step="2">
         <h3>Review Your Order</h3>
-        <p class="sub">Confirm all details are correct before payment.</p>
+        <p class="sub">Your tickets are held temporarily while you review your details.</p>
+        <p id="reservation-countdown" role="status" style="font-weight:700;margin:8px 0 14px;color:var(--accent)">Reservation timer will appear after availability is confirmed.</p>
         <div class="order-box" id="review-box"></div>
         <div class="field"><label>Full Name</label><input type="text" id="review-name" placeholder="Jane Doe" /></div>
         <div class="field"><label>Email (for ticket delivery)</label><input type="email" id="review-email" placeholder="jane@example.com" /></div>
@@ -3764,42 +3765,69 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDrawe
 
 $('header-cart-btn').addEventListener('click', () => openDrawer(1));
 
+let ticketReservationIds = [];
+let reservationExpiresAt = null;
+let reservationCountdownTimer = null;
+let reservationInProgress = false;
+async function reserveCartInventory() {
+  if (reservationInProgress) return;
+  if (!cart.length) throw new Error('Your cart is empty.');
+  if (ticketReservationIds.length === cart.length && reservationExpiresAt && Date.parse(reservationExpiresAt) > Date.now()) return;
+  reservationInProgress = true;
+  const btn = $('continue-1');
+  if (btn) { btn.disabled = true; btn.textContent = 'Checking availability…'; }
+  try {
+    const headers = { apikey: TICKETNEST_SUPABASE_KEY, Authorization: 'Bearer ' + TICKETNEST_SUPABASE_KEY, 'Content-Type': 'application/json', Accept: 'application/json' };
+    const created = [];
+    for (const item of cart) {
+      if (!item.eventId || !item.tierId) throw new Error('A cart item is missing its event or ticket category. Remove it and add it again.');
+      const response = await fetch(TICKETNEST_SUPABASE_URL + '/rest/v1/rpc/create_ticket_reservation', { method: 'POST', headers, body: JSON.stringify({ p_event_id: item.eventId, p_ticket_tier_id: item.tierId, p_quantity: item.qty }) });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const message = payload.message || payload.details || payload.hint || 'Reservation could not be created.';
+        if (response.status === 401 || response.status === 403) throw new Error('The database requires a signed-in customer to reserve tickets. Customer sign-in must be connected before checkout can reserve tickets.');
+        throw new Error(message);
+      }
+      created.push(payload);
+    }
+    ticketReservationIds = created.map(r => r.reservation_id).filter(Boolean);
+    reservationExpiresAt = created.map(r => r.expires_at).filter(Boolean).sort()[0] || new Date(Date.now() + 600000).toISOString();
+    startReservationCountdown();
+  } catch (error) { ticketReservationIds = []; reservationExpiresAt = null; throw error; }
+  finally { reservationInProgress = false; if (btn) { btn.disabled = cart.length === 0; btn.textContent = 'Continue · $' + calcTotals().total; } }
+}
+function startReservationCountdown() {
+  if (reservationCountdownTimer) clearInterval(reservationCountdownTimer);
+  const update = () => {
+    const el = $('reservation-countdown'); if (!el || !reservationExpiresAt) return;
+    const seconds = Math.max(0, Math.floor((Date.parse(reservationExpiresAt) - Date.now()) / 1000));
+    el.textContent = seconds ? 'Tickets held for ' + Math.floor(seconds / 60) + ':' + String(seconds % 60).padStart(2, '0') : 'Reservation expired. Return to your cart and check availability again.';
+    if (!seconds) { ticketReservationIds = []; reservationExpiresAt = null; clearInterval(reservationCountdownTimer); }
+  }; update(); reservationCountdownTimer = setInterval(update, 1000);
+}
 function goToStep(step) {
-  document.querySelectorAll('.step').forEach(el => {
-    const s = parseInt(el.dataset.step);
-    el.classList.toggle('active', s === step);
-    el.classList.toggle('done', s < step);
-  });
-  document.querySelectorAll('.drawer-step').forEach(el => {
-    el.classList.toggle('active', parseInt(el.dataset.step) === step);
-  });
-
-  if (step === 2) renderOrderBox('review-box');
-  if (step === 3) renderOrderBox('payment-total-box');
-
-  const foot = $('foot-row');
-  const { total } = calcTotals();
+  document.querySelectorAll('.step').forEach(el => { const n = parseInt(el.dataset.step); el.classList.toggle('active', n === step); el.classList.toggle('done', n < step); });
+  document.querySelectorAll('.drawer-step').forEach(el => el.classList.toggle('active', parseInt(el.dataset.step) === step));
+  if (step === 2) renderOrderBox('review-box'); if (step === 3) renderOrderBox('payment-total-box');
+  const foot = $('foot-row'); const total = calcTotals().total;
   if (step === 1) {
-    foot.innerHTML = `
-      <button class="btn btn-outline btn-lg" style="flex:1" id="keep-shopping">Keep Shopping</button>
-      <button class="btn btn-primary btn-lg" style="flex:1" id="continue-1" ${cart.length === 0 ? 'disabled' : ''}>Continue · $${total}</button>`;
+    foot.innerHTML = `<button class="btn btn-outline btn-lg" style="flex:1" id="keep-shopping">Keep Shopping</button><button class="btn btn-primary btn-lg" style="flex:1" id="continue-1" ${cart.length === 0 ? 'disabled' : ''}>Continue · $${total}</button>`;
     $('keep-shopping').addEventListener('click', closeDrawer);
-    $('continue-1').addEventListener('click', () => goToStep(2));
+    $('continue-1').addEventListener('click', async () => { try { await reserveCartInventory(); goToStep(2); } catch (error) { (window.showToast || alert)(error.message || 'Could not reserve tickets.'); } });
   } else if (step === 2) {
-    foot.innerHTML = `
-      <button class="btn btn-outline btn-lg" style="flex:1" id="back-2">Back</button>
-      <button class="btn btn-primary btn-lg" style="flex:1" id="continue-2">Continue · $${total}</button>`;
+    foot.innerHTML = `<button class="btn btn-outline btn-lg" style="flex:1" id="back-2">Back</button><button class="btn btn-primary btn-lg" style="flex:1" id="continue-2">Continue · $${total}</button>`;
     $('back-2').addEventListener('click', () => goToStep(1));
-    $('continue-2').addEventListener('click', () => goToStep(3));
+    $('continue-2').addEventListener('click', () => {
+      if (!ticketReservationIds.length || !reservationExpiresAt || Date.parse(reservationExpiresAt) <= Date.now()) { (window.showToast || alert)('Your reservation has expired. Return to the cart and check availability again.'); goToStep(1); return; }
+      const name = $('review-name').value.trim(), email = $('review-email').value.trim();
+      if (!name || !email.includes('@') || !email.includes('.')) { (window.showToast || alert)('Enter your full name and a valid email address before continuing.'); return; }
+      goToStep(3);
+    });
   } else if (step === 3) {
-    foot.innerHTML = `
-      <button class="btn btn-outline btn-lg" style="flex:1" id="back-3">Back</button>
-      <button class="btn btn-primary btn-lg" style="flex:1" id="pay-now" disabled>Payment setup required</button>`;
-    $('back-3').addEventListener('click', () => goToStep(2));
-    $('pay-now').addEventListener('click', processPayment);
-  } else {
-    foot.innerHTML = '';
-  }
+    foot.innerHTML = `<button class="btn btn-outline btn-lg" style="flex:1" id="back-3">Back</button><button class="btn btn-primary btn-lg" style="flex:1" id="pay-now" disabled>Payment setup required</button>`;
+    $('back-3').addEventListener('click', () => goToStep(2)); $('pay-now').addEventListener('click', processPayment);
+  } else foot.innerHTML = '';
+  if (step === 2) startReservationCountdown();
 }
 
 function processPayment() {
