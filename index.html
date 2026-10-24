@@ -5509,7 +5509,8 @@ $('done-btn').addEventListener('click', () => { closeDrawer(); showView('home');
     const legend = document.getElementById('seat-map-legend');
     if (!map || !list || !legend || !/Loading event zones/i.test(map.textContent)) return;
     const titleNode = document.querySelector('[data-view="event"] .summary-event h3') || document.querySelector('[data-view="event"] h1');
-    const eventTitle = (titleNode && titleNode.textContent.trim()) || 'The final coach';
+    let eventTitle = (titleNode && titleNode.textContent.trim()) || '';
+    if (!eventTitle || /no event selected|loading|select an event/i.test(eventTitle)) eventTitle = '';
     const headers = { apikey: PUBLIC_KEY, Authorization: 'Bearer ' + PUBLIC_KEY, Accept: 'application/json' };
     const get = async (table, params) => {
       const url = new URL(SUPABASE + '/rest/v1/' + table);
@@ -5530,8 +5531,16 @@ $('done-btn').addEventListener('click', () => { closeDrawer(); showView('home');
       catch (_) { throw new Error(table + ' returned invalid JSON'); }
     };
     try {
-      const found = await get('events', {select:'id,title,venue,city,starts_at,category,status', title:'eq.' + eventTitle, status:'eq.published', limit:'1'});
-      if (!found.length) throw new Error('Could not find published event "' + eventTitle + '".');
+      let found = [];
+      if (eventTitle) {
+        found = await get('events', {select:'id,title,venue,city,starts_at,category,status', title:'eq.' + eventTitle, status:'eq.published', limit:'1'});
+      }
+      // Direct links can open before the event title is initialized. In that case,
+      // recover from the published catalogue instead of querying for placeholder text.
+      if (!found.length) {
+        found = await get('events', {select:'id,title,venue,city,starts_at,category,status', status:'eq.published', order:'starts_at.asc', limit:'1'});
+      }
+      if (!found.length) throw new Error('No published events were returned by Supabase. Check event publication and public read permissions.');
       const event = found[0];
       const [tiers, zones] = await Promise.all([
         get('ticket_tiers', {select:'id,event_id,name,price_usd,quantity_total,quantity_sold', event_id:'eq.' + event.id, order:'created_at.asc'}),
