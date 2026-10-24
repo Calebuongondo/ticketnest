@@ -4629,12 +4629,73 @@ $('done-btn').addEventListener('click', () => { closeDrawer(); showView('home');
 
   /* Data */
   const TICKETS = [];
-
   const TRANSFERS = [];
-
   const ORDERS = [];
-
   const FAVORITES = [];
+
+  let accountDataLoading = false;
+  async function loadAccountData() {
+    if (accountDataLoading) return;
+    if (!window.ticketNestGetAccessToken) return;
+    accountDataLoading = true;
+    const grid = $('tickets-grid');
+    const orderBody = $('orders-body');
+    if (grid && !TICKETS.length) grid.innerHTML = '<div class="empty-tickets"><h3>Loading your tickets…</h3><p>Checking your secure TicketNest account.</p></div>';
+    if (orderBody && !ORDERS.length) orderBody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:28px;color:var(--muted)">Loading your orders…</td></tr>';
+    try {
+      const token = await window.ticketNestGetAccessToken();
+      if (!token) {
+        if (grid) grid.innerHTML = '<div class="empty-tickets"><h3>Sign in to view your tickets</h3><p>Tickets and orders are private to your TicketNest account.</p><button class="btn btn-primary" type="button" data-account-login>Sign in</button></div>';
+        if (orderBody) orderBody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:28px;color:var(--muted)">Sign in to view your order history.</td></tr>';
+        TICKETS.splice(0); ORDERS.splice(0); renderAll(); return;
+      }
+      const headers = { apikey: TICKETNEST_SUPABASE_KEY, Authorization: 'Bearer ' + token, Accept: 'application/json' };
+      const [ticketsResponse, ordersResponse] = await Promise.all([
+        fetch(TICKETNEST_SUPABASE_URL + '/rest/v1/tickets?select=id,ticket_code,status,created_at,event:events(title,venue,city,starts_at,category,image_url)&order=created_at.desc', { headers }),
+        fetch(TICKETNEST_SUPABASE_URL + '/rest/v1/orders?select=id,status,total_usd,currency,created_at,event:events(title,venue,city,starts_at,image_url)&order=created_at.desc', { headers })
+      ]);
+      if (!ticketsResponse.ok || !ordersResponse.ok) throw new Error('Could not load your account records. Please refresh and sign in again.');
+      const [tickets, orders] = await Promise.all([ticketsResponse.json(), ordersResponse.json()]);
+      TICKETS.splice(0, TICKETS.length, ...tickets.map(t => {
+        const ev = t.event || {};
+        const code = String(t.ticket_code || '');
+        return {
+          id: 'TN-' + (code ? code.slice(-8).toUpperCase() : t.id.slice(0, 8).toUpperCase()),
+          ticketCode: code,
+          event: ev.title || 'Event details unavailable',
+          category: ev.category || 'Ticket',
+          date: ev.starts_at ? new Date(ev.starts_at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : 'Date to be announced',
+          venue: [ev.venue, ev.city].filter(Boolean).join(', ') || 'Venue to be announced',
+          img: ev.image_url || '',
+          section: '—', row: '—', seat: '—',
+          qrSeed: '', verified: t.status === 'valid',
+          transferable: false, sellable: false,
+          status: t.status
+        };
+      }));
+      ORDERS.splice(0, ORDERS.length, ...orders.map(o => {
+        const ev = o.event || {};
+        return {
+          orderId: String(o.id).slice(0, 8).toUpperCase(),
+          event: ev.title || 'Event details unavailable',
+          date: o.created_at ? new Date(o.created_at).toLocaleDateString() : '—',
+          seats: '—',
+          total: (o.currency || 'USD') + ' ' + Number(o.total_usd || 0).toFixed(2),
+          status: o.status,
+          img: ev.image_url || ''
+        };
+      }));
+      renderAll();
+    } catch (error) {
+      console.error('TicketNest account data load failed:', error);
+      if (grid) grid.innerHTML = '<div class="empty-tickets"><h3>Could not load tickets</h3><p>Check your connection, then refresh this page. Your account records have not been changed.</p><button class="btn btn-primary" type="button" data-account-retry>Try again</button></div>';
+      if (orderBody) orderBody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:28px;color:var(--muted)">Could not load orders. Please try again.</td></tr>';
+    } finally {
+      accountDataLoading = false;
+    }
+  }
+  window.ticketNestLoadAccountData = loadAccountData;
+  window.addEventListener('ticketnest:auth-changed', loadAccountData);
 
   const CHECK = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg>`;
 
@@ -4692,7 +4753,7 @@ $('done-btn').addEventListener('click', () => { closeDrawer(); showView('home');
     return `
     <article class="ticket">
       <div class="ticket-main">
-        <img class="ticket-img" src="https://images.unsplash.com/photo-${t.img}?w=300&q=80&auto=format&fit=crop" alt="${t.event}" />
+        <img class="ticket-img" src="${t.img && /^https?:\\/\\//i.test(t.img) ? t.img : 'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=300&q=80&auto=format&fit=crop'}" alt="${t.event}" />
         <div class="ticket-details">
           <span class="ticket-cat">${t.category}</span>
           ${t.verified ? `<span class="ticket-badge">${CHECK.replace('<svg ', '<svg width="9" height="9" ')}Verified</span>` : ''}
@@ -4707,11 +4768,14 @@ $('done-btn').addEventListener('click', () => { closeDrawer(); showView('home');
         </div>
       </div>
       <div class="ticket-stub">
-        <div class="dyn-qr-wrap" data-qr="${i}" role="button" tabindex="0" aria-label="View enlarged QR code">
-          <div class="qr-ring"></div>
-          <div class="qr-svg">${t.transferredNote ? `<div style="display:grid;place-items:center;height:100%;font-size:10px;font-weight:700;color:#5A6472;text-align:center;">QR locked<br>${t.transferredNote}</div>` : generateQR(t.qrSeed + '_0')}</div>
+        <div class="dyn-qr-wrap" style="display:grid;place-items:center;padding:10px;min-height:112px;background:#fff;border:1px dashed #cbd5e1;border-radius:8px;">
+          <div style="text-align:center;color:#334155;font-size:11px;line-height:1.5;">
+            <strong style="display:block;font-size:10px;color:#64748b;margin-bottom:5px;">TICKET REFERENCE</strong>
+            <span style="font-weight:800;overflow-wrap:anywhere;">${t.id}</span>
+            <span style="display:block;margin-top:5px;">${t.verified ? 'Valid ticket record' : 'Status: ' + (t.status || 'unverified')}</span>
+          </div>
         </div>
-        <div class="qr-status"><span class="dot"></span>Live · Refresh 30s</div>
+        <div class="qr-status"><span class="dot"></span>Secure entry QR not enabled</div>
         <div class="ticket-order">${t.id}</div>
         <div class="ticket-actions">
           ${t.transferable
@@ -5041,12 +5105,12 @@ $('done-btn').addEventListener('click', () => { closeDrawer(); showView('home');
 
   /* Orders & favorites */
   function renderOrders() {
-    const labels = { confirmed: 'Confirmed', completed: 'Completed', refunded: 'Refunded', listed: 'Listed for resale' };
+    const labels = { paid: 'Paid', pending: 'Pending', confirmed: 'Confirmed', completed: 'Completed', refunded: 'Refunded', failed: 'Failed', cancelled: 'Cancelled', listed: 'Listed for resale' };
     $('orders-body').innerHTML = ORDERS.length ? ORDERS.map(o => `
       <tr>
         <td>
           <div class="order-event-cell">
-            <img class="order-thumb" src="https://images.unsplash.com/photo-${o.img}?w=100&q=80&auto=format&fit=crop" alt="" />
+            <img class="order-thumb" src="${o.img && /^https?:\\/\\//i.test(o.img) ? o.img : 'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=100&q=80&auto=format&fit=crop'}" alt="" />
             <div class="order-event-info"><strong>${o.event}</strong><small>#${o.orderId}</small></div>
           </div>
         </td>
@@ -5164,6 +5228,11 @@ $('done-btn').addEventListener('click', () => { closeDrawer(); showView('home');
     if (t.classList.contains('modal-overlay')) {
       return t.id === 'qr-modal' ? closeQR() : closeModal(t.id);
     }
+
+    const loginButton = t.closest('[data-account-login]');
+    if (loginButton) { if (window.ticketNestOpenAuth) window.ticketNestOpenAuth('login'); return; }
+    const retryButton = t.closest('[data-account-retry]');
+    if (retryButton) { loadAccountData(); return; }
 
     const close = t.closest('[data-close]');
     if (close) return close.dataset.close === 'qr-modal' ? closeQR() : closeModal(close.dataset.close);
