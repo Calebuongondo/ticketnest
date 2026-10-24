@@ -2581,48 +2581,9 @@ body[data-theme="dark"] .auth-demo-note{border-top-color:#2b3545;color:#8f9bad}
               <span class="hint">Click a section on the map</span>
             </div>
             <div class="seat-map-wrap">
-              <svg class="seat-map" viewBox="0 0 500 460" xmlns="http://www.w3.org/2000/svg">
-                <rect class="stage" x="150" y="10" width="200" height="34" rx="6"/>
-                <text class="stage-text" x="250" y="32">STAGE</text>
-
-                <path class="seat-section tier-vip" data-tier="vip" d="M 130 60 L 370 60 L 360 110 L 140 110 Z"/>
-                <text class="seat-label" x="250" y="90">VIP PIT · $350</text>
-
-                <path class="seat-section tier-premium" data-tier="premium" d="M 140 116 L 360 116 L 370 165 L 130 165 Z"/>
-                <text class="seat-label" x="250" y="145">FLOOR A · $250</text>
-
-                <path class="seat-section tier-premium" data-tier="premium2" d="M 130 171 L 370 171 L 380 215 L 120 215 Z"/>
-                <text class="seat-label" x="250" y="197">FLOOR B · $200</text>
-
-                <path class="seat-section tier-mid" data-tier="mid" d="M 60 130 Q 30 180 40 240 L 100 240 Q 90 180 110 130 Z"/>
-                <text class="seat-label" x="75" y="195" transform="rotate(-90 75 195)">101-105</text>
-
-                <path class="seat-section tier-mid" data-tier="mid" d="M 440 130 Q 470 180 460 240 L 400 240 Q 410 180 390 130 Z"/>
-                <text class="seat-label" x="425" y="195" transform="rotate(90 425 195)">106-110</text>
-
-                <path class="seat-section tier-mid" data-tier="mid" d="M 120 221 L 380 221 L 385 265 L 115 265 Z"/>
-                <text class="seat-label" x="250" y="247">111-120 · $150</text>
-
-                <path class="seat-section tier-budget" data-tier="budget" d="M 20 200 Q -5 260 20 320 L 80 300 Q 60 260 60 240 Z"/>
-                <text class="seat-label" x="45" y="265" transform="rotate(-90 45 265)">201-208</text>
-
-                <path class="seat-section tier-budget" data-tier="budget" d="M 480 200 Q 505 260 480 320 L 420 300 Q 440 260 440 240 Z"/>
-                <text class="seat-label" x="455" y="265" transform="rotate(90 455 265)">209-216</text>
-
-                <path class="seat-section tier-budget" data-tier="budget" d="M 90 300 L 410 300 L 420 350 L 80 350 Z"/>
-                <text class="seat-label" x="250" y="330">217-220 · $75</text>
-
-                <path class="seat-section tier-budget" data-tier="budget" d="M 80 356 L 420 356 L 430 410 L 70 410 Z"/>
-                <text class="seat-label" x="250" y="388">UPPER 221-230 · $55</text>
-              </svg>
+              <svg class="seat-map" id="seat-map" viewBox="0 0 500 460" role="group" aria-label="Event seating zones" xmlns="http://www.w3.org/2000/svg"><rect class="stage" x="150" y="10" width="200" height="34" rx="6"/><text class="stage-text" x="250" y="32">STAGE</text><text x="250" y="230" text-anchor="middle" fill="currentColor" font-size="14">Loading event zones…</text></svg>
             </div>
-            <div class="legend">
-              <span><span class="swatch" style="background:#FEF3C7"></span>VIP</span>
-              <span><span class="swatch" style="background:#DBEAFE"></span>Floor</span>
-              <span><span class="swatch" style="background:#D1FAE5"></span>Lower Bowl</span>
-              <span><span class="swatch" style="background:#F3E8FF"></span>Upper Bowl</span>
-              <span><span class="swatch" style="background:#026CDF"></span>Selected</span>
-            </div>
+            <div class="legend" id="seat-map-legend"><span>Zone colors are configured by the event administrator.</span></div>
           </div>
 
           <div class="panel">
@@ -3479,6 +3440,7 @@ function setEventDetails(e) {
   v.querySelector('.breadcrumb li:last-child').textContent = e.title;
   v.querySelector('#gallery-main-img').src = e.img;
   v.querySelector('.summary-event img').src = e.img;
+  loadEventTicketOptions(e.id).catch(error=>console.error('Ticket options:',error));
 }
 
 const grid = $('trending-grid');
@@ -3580,111 +3542,98 @@ $('gallery-thumbs').addEventListener('click', (e) => {
 /* ==========================================================
    EVENT: TIERS & SELECTION
 ============================================================ */
-const TIERS = {
-  vip:      { name: 'VIP Pit',       desc: 'Closest to the stage · Premium sound',  price: 350, color: '#FEF3C7', badge: 'Best' },
-  premium:  { name: 'Floor Seating', desc: 'Front-floor rows · Great sightlines',    price: 250, color: '#DBEAFE' },
-  premium2: { name: 'Floor B',       desc: 'Mid-floor rows · Elevated view',         price: 200, color: '#DBEAFE' },
-  mid:      { name: 'Lower Bowl',    desc: 'Sections 101–120 · Excellent views',     price: 150, color: '#D1FAE5' },
-  budget:   { name: 'Upper Bowl',    desc: 'Sections 201–230 · Best value',          price: 75,  color: '#F3E8FF' },
-};
+let TIERS = {};
+let activeTicketEvent = null;
+let activeZones = [];
 const SERVICE_FEE_RATE = 0.14;
 
 let cart = [];
 let selectedTier = null;
 let qty = 1;
 
-$('tier-list').innerHTML = ['vip', 'premium', 'premium2', 'mid', 'budget'].map(key => {
-  const t = TIERS[key];
-  return `
-    <div class="tier-card" data-tier="${key}">
-      <div class="tier-swatch" style="background:${t.color}"></div>
-      <div class="tier-info">
-        <div class="tier-name">${t.name} ${t.badge ? `<span class="badge">${t.badge}</span>` : ''}</div>
-        <div class="tier-desc">${t.desc}</div>
-      </div>
-      <div class="tier-price"><strong>$${t.price}</strong><small>per ticket</small></div>
-    </div>`;
-}).join('');
-
-const getUnitPrice = (key) => TIERS[key].price;
-const tierLabel = (key) => TIERS[key].name;
-
+function renderEventTicketOptions(){
+  const list=$('tier-list'),map=$('seat-map'),legend=$('seat-map-legend');
+  const availableTiers=Object.values(TIERS);
+  if(!availableTiers.length){
+    list.innerHTML='<div class="empty-state"><p>No ticket categories are configured for this event yet. Please check back later.</p></div>';
+    map.innerHTML='<rect class="stage" x="150" y="10" width="200" height="34" rx="6"/><text class="stage-text" x="250" y="32">STAGE</text><text x="250" y="230" text-anchor="middle" fill="currentColor" font-size="13">No seating zones configured</text>';
+    legend.innerHTML='<span>No seating zones configured for this event yet.</span>';
+    selectedTier=null;updateSummary();return;
+  }
+  list.innerHTML=availableTiers.map(t=>'<button type="button" class="tier-card" data-tier="'+t.id+'"><span class="tier-swatch" style="background:'+t.color+'"></span><span class="tier-info"><span class="tier-name">'+escapeTicketText(t.name)+'</span><span class="tier-desc">'+Math.max(0,t.quantity_total-t.quantity_sold)+' available</span></span><span class="tier-price"><strong>$'+t.price.toFixed(2)+'</strong><small>per ticket</small></span></button>').join('');
+  const zones=activeZones;
+  if(!zones.length){
+    map.innerHTML='<rect class="stage" x="150" y="10" width="200" height="34" rx="6"/><text class="stage-text" x="250" y="32">STAGE</text><text x="250" y="230" text-anchor="middle" fill="currentColor" font-size="13">No seating zones configured</text>';
+    legend.innerHTML='<span>Ticket categories are available below; the administrator has not added map zones yet.</span>';
+  }else{
+    const gap=8,pad=18,cols=zones.length===1?1:zones.length===2?2:3,rows=Math.ceil(zones.length/cols),cellW=(500-pad*2-gap*(cols-1))/cols,cellH=Math.min(75,(400-gap*(rows-1))/rows);
+    let svg='<rect class="stage" x="150" y="10" width="200" height="34" rx="6"/><text class="stage-text" x="250" y="32">STAGE</text>';
+    zones.forEach((z,i)=>{const row=Math.floor(i/cols),col=i%cols,x=pad+col*(cellW+gap),y=58+row*(cellH+gap),tier=TIERS[z.ticket_tier_id],soldOut=!tier||tier.quantity_total<=tier.quantity_sold;
+      svg+='<g class="seat-zone-group" data-tier="'+z.ticket_tier_id+'" role="button" tabindex="'+(soldOut?-1:0)+'" aria-label="'+escapeTicketText(z.name)+', '+(tier?'$'+tier.price.toFixed(2):'unavailable')+'" style="cursor:'+(soldOut?'not-allowed':'pointer')+';opacity:'+(soldOut?'.45':'1')+'"><rect class="seat-section" data-tier="'+z.ticket_tier_id+'" x="'+x+'" y="'+y+'" width="'+cellW+'" height="'+cellH+'" rx="8" style="fill:'+z.color+';stroke:#fff;stroke-width:2"/><text class="seat-label" x="'+(x+cellW/2)+'" y="'+(y+cellH/2-4)+'" text-anchor="middle">'+escapeTicketText(z.name).slice(0,24)+'</text><text class="seat-label" x="'+(x+cellW/2)+'" y="'+(y+cellH/2+13)+'" text-anchor="middle">'+(tier?'$'+tier.price.toFixed(2):'Unavailable')+'</text></g>';
+    });
+    map.innerHTML=svg;
+    legend.innerHTML=zones.map(z=>'<span><span class="swatch" style="background:'+z.color+'"></span>'+escapeTicketText(z.name)+'</span>').join('');
+  }
+  list.querySelectorAll('[data-tier]').forEach(el=>el.addEventListener('click',()=>selectTier(el.dataset.tier)));
+  map.querySelectorAll('[data-tier]').forEach(el=>{const choose=()=>{const t=TIERS[el.dataset.tier];if(t&&t.quantity_total>t.quantity_sold)selectTier(el.dataset.tier)};el.addEventListener('click',choose);el.addEventListener('keydown',ev=>{if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();choose()}})});
+}
+function escapeTicketText(value){return String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
+async function loadEventTicketOptions(eventId){
+  activeTicketEvent=eventId||null;activeZones=[];TIERS={};selectedTier=null;qty=1;$('qty-input').value='1';updateSummary();
+  if(!eventId){renderEventTicketOptions();return}
+  const headers={apikey:TICKETNEST_SUPABASE_KEY,Authorization:'Bearer '+TICKETNEST_SUPABASE_KEY,Accept:'application/json'};
+  const tierUrl=new URL(TICKETNEST_SUPABASE_URL+'/rest/v1/ticket_tiers');tierUrl.searchParams.set('select','id,event_id,name,price_usd,quantity_total,quantity_sold');tierUrl.searchParams.set('event_id','eq.'+eventId);tierUrl.searchParams.set('order','created_at.asc');
+  const zoneUrl=new URL(TICKETNEST_SUPABASE_URL+'/rest/v1/event_seating_zones');zoneUrl.searchParams.set('select','id,event_id,ticket_tier_id,name,color,display_order');zoneUrl.searchParams.set('event_id','eq.'+eventId);zoneUrl.searchParams.set('order','display_order.asc');
+  try{
+    const [tr,zr]=await Promise.all([fetch(tierUrl,{headers,cache:'no-store'}),fetch(zoneUrl,{headers,cache:'no-store'})]);
+    if(!tr.ok)throw new Error('Could not load ticket categories ('+tr.status+').');
+    if(!zr.ok)throw new Error('Could not load seating zones ('+zr.status+').');
+    const tierRows=await tr.json(),zoneRows=await zr.json();
+    if(!Array.isArray(tierRows)||!Array.isArray(zoneRows))throw new Error('Unexpected ticket data response.');
+    tierRows.forEach(t=>{const total=Math.max(0,Number(t.quantity_total||0)),sold=Math.max(0,Number(t.quantity_sold||0));if(total>sold)TIERS[t.id]={id:t.id,name:t.name,price:Math.max(0,Number(t.price_usd||0)),color:'#6366f1',quantity_total:total,quantity_sold:sold}});
+    activeZones=zoneRows.filter(z=>TIERS[z.ticket_tier_id]&&z.event_id===eventId&&/^#[0-9a-f]{6}$/i.test(z.color||''));
+    renderEventTicketOptions();
+  }catch(error){
+    $('tier-list').innerHTML='<div class="empty-state"><p>'+escapeTicketText(error.message||'Ticket options could not be loaded.')+'</p><p>Please refresh and try again.</p></div>';
+    $('seat-map').innerHTML='<text x="250" y="230" text-anchor="middle" fill="currentColor" font-size="13">Map unavailable</text>';
+    $('seat-map-legend').innerHTML='<span>Unable to load seating zones.</span>';
+  }
+}
 function selectTier(key) {
-  selectedTier = key;
-  qty = 1;
-  $('qty-input').value = 1;
-  document.querySelectorAll('.tier-card').forEach(c => c.classList.toggle('selected', c.dataset.tier === key));
-  document.querySelectorAll('.seat-section').forEach(s => s.classList.toggle('selected', s.dataset.tier === key));
+  if(!TIERS[key]||TIERS[key].quantity_total<=TIERS[key].quantity_sold)return;
+  selectedTier=key;qty=1;$('qty-input').value=1;
+  document.querySelectorAll('.tier-card').forEach(c=>c.classList.toggle('selected',c.dataset.tier===key));
+  document.querySelectorAll('.seat-section').forEach(s=>s.classList.toggle('selected',s.dataset.tier===key));
   updateSummary();
 }
-
+function getUnitPrice(key){return TIERS[key]?.price||0}
+function tierLabel(key){return TIERS[key]?.name||'Ticket'}
 function updateSummary() {
-  const content = $('summary-content');
-  const cta = $('summary-cta');
-  const mPrice = $('mobile-price');
-  const mDetail = $('mobile-detail');
-  const mBtn = $('mobile-cart-btn');
-
-  if (!selectedTier) {
-    content.innerHTML = `
-      <div class="empty-state">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4h16v16H4z"/><path d="M4 12h16M12 4v16"/></svg>
-        Select a section to see<br/>ticket pricing.
-      </div>`;
-    cta.style.display = 'none';
-    mPrice.textContent = 'Select a section';
-    mDetail.textContent = 'Tickets from $55';
-    mBtn.disabled = true;
-    return;
+  const content=$('summary-content'),cta=$('summary-cta'),mPrice=$('mobile-price'),mDetail=$('mobile-detail'),mBtn=$('mobile-cart-btn');
+  if(!selectedTier||!TIERS[selectedTier]){
+    content.innerHTML='<div class="empty-state"><p>Select a configured ticket category to see pricing.</p></div>';cta.style.display='none';mPrice.textContent='Select a section';mDetail.textContent='Ticket availability is shown below.';mBtn.disabled=true;return;
   }
-
-  const unit = getUnitPrice(selectedTier);
-  const subtotal = unit * qty;
-  const fees = Math.round(subtotal * SERVICE_FEE_RATE);
-  const total = subtotal + fees;
-
-  content.innerHTML = `
-    <div class="summary-lines">
-      <div class="summary-line"><span>Section</span><strong>${tierLabel(selectedTier)}</strong></div>
-      <div class="summary-line"><span>Price per ticket</span><strong>$${unit}</strong></div>
-      <div class="summary-line"><span>Quantity</span><strong>${qty}</strong></div>
-      <div class="summary-line"><span>Service fee (preview rate; configurable by admin)</span><strong>$${fees}</strong></div>
-      <div class="summary-line total"><span>Total</span><strong>$${total}</strong></div>
-    </div>`;
-  cta.style.display = 'block';
-  mPrice.textContent = `$${total}`;
-  mDetail.textContent = `${tierLabel(selectedTier)} · ${qty} ticket${qty > 1 ? 's' : ''}`;
-  mBtn.disabled = false;
+  const t=TIERS[selectedTier],unit=t.price,subtotal=unit*qty,fees=Math.round(subtotal*SERVICE_FEE_RATE),total=subtotal+fees;
+  content.innerHTML='<div class="summary-lines"><div class="summary-line"><span>Section</span><strong>'+escapeTicketText(t.name)+'</strong></div><div class="summary-line"><span>Price per ticket</span><strong>$'+unit.toFixed(2)+'</strong></div><div class="summary-line"><span>Available</span><strong>'+Math.max(0,t.quantity_total-t.quantity_sold)+'</strong></div><div class="summary-line"><span>Quantity</span><strong>'+qty+'</strong></div><div class="summary-line"><span>Service fee (preview rate; configurable by admin)</span><strong>$'+fees.toFixed(2)+'</strong></div><div class="summary-line total"><span>Total</span><strong>$'+total.toFixed(2)+'</strong></div></div>';
+  cta.style.display='block';mPrice.textContent='$'+total.toFixed(2);mDetail.textContent=t.name+' · '+qty+' ticket'+(qty>1?'s':'');mBtn.disabled=false;
 }
-
-document.querySelectorAll('.tier-card').forEach(card => card.addEventListener('click', () => selectTier(card.dataset.tier)));
-document.querySelectorAll('.seat-section').forEach(sec => sec.addEventListener('click', () => selectTier(sec.dataset.tier)));
-
-$('qty-minus').addEventListener('click', () => { if (qty > 1) { qty--; $('qty-input').value = qty; updateSummary(); } });
-$('qty-plus').addEventListener('click', () => { if (qty < 8) { qty++; $('qty-input').value = qty; updateSummary(); } });
-$('qty-input').addEventListener('input', (e) => {
-  let v = parseInt(e.target.value) || 1;
-  v = Math.min(8, Math.max(1, v));
-  qty = v; e.target.value = v; updateSummary();
-});
+$('qty-minus').addEventListener('click',()=>{if(qty>1){qty--;$('qty-input').value=qty;updateSummary()}});
+$('qty-plus').addEventListener('click',()=>{const t=TIERS[selectedTier];if(qty<8&&t&&qty<t.quantity_total-t.quantity_sold){qty++;$('qty-input').value=qty;updateSummary()}});
+$('qty-input').addEventListener('input',e=>{const t=TIERS[selectedTier];let v=parseInt(e.target.value)||1;v=Math.min(8,t?Math.max(1,t.quantity_total-t.quantity_sold):8);qty=v;e.target.value=v;updateSummary()});
 
 /* ==========================================================
    EVENT: CART
 ============================================================ */
 function addToCart() {
-  if (!selectedTier) return;
-  const unit = getUnitPrice(selectedTier);
-  const name = tierLabel(selectedTier);
-  const inCart = cart.reduce((s, i) => s + i.qty, 0);
-  if (inCart + qty > 8) {
-    (window.showToast || alert)(`Your cart already has ${inCart} tickets. The limit is 8 per order.`);
-    return;
-  }
-  const existing = cart.find(i => i.tierName === name && i.unitPrice === unit);
-  if (existing) existing.qty = Math.min(existing.qty + qty, 8);
-  else cart.push({ tierName: name, unitPrice: unit, qty, color: TIERS[selectedTier].color });
-  updateCartCount();
-  openDrawer(1);
+  if (!selectedTier||!TIERS[selectedTier]) return;
+  const tier=TIERS[selectedTier],unit=tier.price,name=tier.name;
+  if(qty>tier.quantity_total-tier.quantity_sold){(window.showToast||alert)('There are not enough tickets remaining in this category.');return;}
+  const inCart=cart.reduce((s,i)=>s+i.qty,0);
+  if(inCart+qty>8){(window.showToast||alert)(`Your cart already has ${inCart} tickets. The limit is 8 per order.`);return;}
+  const existing=cart.find(i=>i.tierId===tier.id);
+  if(existing){if(existing.qty+qty>tier.quantity_total-tier.quantity_sold){(window.showToast||alert)('There are not enough tickets remaining in this category.');return;}existing.qty+=qty;}
+  else cart.push({tierId:tier.id,eventId:activeTicketEvent,tierName:name,unitPrice:unit,qty,color:tier.color});
+  updateCartCount();openDrawer(1);
 }
 $('add-to-cart-btn').addEventListener('click', addToCart);
 $('mobile-cart-btn').addEventListener('click', addToCart);
