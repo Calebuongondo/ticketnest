@@ -1392,6 +1392,74 @@ body[data-theme="dark"] .auth-demo-note{border-top-color:#2b3545;color:#8f9bad}
   .empty-tickets { border: 1px dashed #C8D5E6; border-radius: 10px; padding: 34px 22px; background: #F8FAFD; }
   .btn, .filter-pill, .tickets-link, .see-all { transition-duration: .16s; }
   :focus-visible { outline: 3px solid rgba(2,108,223,.45); outline-offset: 3px; }
+
+  /* Marketplace refinements for search, event details, account and ticket flows */
+  .search-header { background: #F5F7FA; border-bottom-color: #E2E7EF; padding: 28px 0; }
+  .search-title-block .eyebrow { letter-spacing: .85px; font-size: 11px; }
+  .search-title-block h1 { font-size: clamp(27px,3.3vw,36px); letter-spacing: -1px; }
+  .search-back { border-radius: 6px; background: #fff; }
+  .results-layout { grid-template-columns: 248px minmax(0,1fr); gap: 25px; padding-top: 25px; }
+  .filters { border-radius: 9px; box-shadow: 0 2px 8px rgba(20,34,56,.04); }
+  .filters-head { padding: 17px 18px; }
+  .filter-group { padding: 16px 18px; }
+  .results-grid { grid-template-columns: repeat(3,minmax(0,1fr)); gap: 18px; }
+  .results-grid .event-card { min-width: 0; }
+  .results-grid .event-media { aspect-ratio: 16/9; }
+  .results-grid .event-body { padding: 14px; }
+  .results-grid .event-body h3 { font-size: 15px; line-height: 1.35; }
+  .results-grid .event-venue { font-size: 11.5px; }
+  .results-grid .tickets-link { font-size: 12px; }
+  .sort-select { border-radius: 6px; min-height: 42px; }
+  .active-filters { margin-bottom: 18px; }
+  .event-hero { padding: 30px 0 46px; }
+  .event-hero-grid { grid-template-columns: minmax(0,1.05fr) minmax(350px,.95fr); gap: 38px; }
+  .gallery-main { aspect-ratio: 16/10; border-radius: 10px; box-shadow: none; }
+  .event-info h1 { font-size: clamp(30px,3.5vw,44px); letter-spacing: -1.3px; }
+  .event-info .subtitle { font-size: 15px; }
+  .event-cat-tag { border-radius: 5px; }
+  .detail-row { border: 1px solid #E8ECF2; background: #F7F9FC; border-radius: 8px; padding: 13px; }
+  .detail-icon { border-radius: 8px; box-shadow: none; background: #E8F1FD; }
+  .trust-badges { border-radius: 8px; }
+  .event-detail-card { border-radius: 10px; box-shadow: 0 4px 20px rgba(10,20,40,.06); }
+  .event-detail-card .panel-head, .panel-head { border-bottom-color: #E8ECF2; }
+  .ticket-card { border-radius: 8px; }
+  .ticket-card:hover { border-color: #91BFFF; }
+  .account-content { border-radius: 10px; }
+  .tab-panel { border-radius: 9px; }
+  .profile-card, .settings-section, .order-row, .transfer-card { border-radius: 9px; }
+  .account-nav button, .account-nav a { border-radius: 6px; }
+  .modal { border-radius: 12px; }
+  .modal-head, .modal-foot { border-color: #E7EBF2; }
+  .modal .btn, .drawer .btn, .checkout-card .btn { border-radius: 7px; }
+  .newsletter { border-radius: 10px; box-shadow: none; }
+  .newsletter input, .newsletter button { border-radius: 7px; }
+  @media (max-width: 1100px) {
+    .results-layout { grid-template-columns: 1fr; }
+    .filters { display: none; }
+    .mobile-filter-bar { display: block; }
+    .results-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+    .event-hero-grid { grid-template-columns: minmax(0,1fr) minmax(300px,.9fr); gap: 24px; }
+  }
+  @media (max-width: 700px) {
+    .search-header { padding: 20px 0; }
+    .search-header-inner { gap: 14px; }
+    .view-controls { width: 100%; justify-content: flex-end; }
+    .results-layout { padding: 16px 0 42px; }
+    .results-grid { grid-template-columns: minmax(0,1fr); gap: 14px; }
+    .results-grid .event-card { display: grid; grid-template-columns: minmax(112px,38%) minmax(0,1fr); }
+    .results-grid .event-media { aspect-ratio: auto; min-height: 100%; }
+    .results-grid .event-body { padding: 11px; }
+    .results-grid .event-body h3 { font-size: 13px; }
+    .results-grid .event-foot { margin-top: 9px; padding-top: 8px; }
+    .results-grid .tickets-link { padding: 6px; font-size: 10px; }
+    .event-hero { padding: 18px 0 35px; }
+    .event-hero-grid { grid-template-columns: minmax(0,1fr); gap: 24px; }
+    .gallery-main { aspect-ratio: 16/9; }
+    .event-info h1 { font-size: 30px; }
+    .event-info .subtitle { margin-bottom: 18px; }
+    .detail-row { padding: 11px; }
+  }
+
   @media (min-width: 1500px) {
     :root { --max: 1380px; }
     .event-grid { gap: 25px; }
