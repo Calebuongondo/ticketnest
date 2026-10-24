@@ -3694,25 +3694,21 @@ function ensureQuantityTier(){
   selectTier(first.id);
   return true;
 }
-const quantityMinusButton=$('qty-minus');
-const quantityPlusButton=$('qty-plus');
-const quantityInput=$('qty-input');
-quantityMinusButton.addEventListener('click',event=>{
+// Delegate quantity events from the document so they remain reliable if the event panel is re-rendered.
+document.addEventListener('click',event=>{
+  const minus=event.target.closest('#qty-minus'),plus=event.target.closest('#qty-plus');
+  if(!minus&&!plus)return;
   event.preventDefault();
   if(!ensureQuantityTier())return;
-  setTicketQuantity(Math.max(1,Number(qty||1)-1));
-});
-quantityPlusButton.addEventListener('click',event=>{
-  event.preventDefault();
-  if(!ensureQuantityTier())return;
+  if(minus){setTicketQuantity(Number(qty||1)-1);return;}
   const tier=TIERS[selectedTier];
   const maximum=Math.min(8,Math.max(0,Number(tier.quantity_total)-Number(tier.quantity_sold)));
   if(Number(qty)>=maximum){(window.showToast||alert)('Maximum available quantity is '+maximum+' for this category.');return;}
   setTicketQuantity(Number(qty||1)+1);
 });
-quantityInput.addEventListener('input',event=>setTicketQuantity(event.target.value));
-quantityInput.addEventListener('change',event=>setTicketQuantity(event.target.value));
-quantityInput.addEventListener('keydown',event=>{if(event.key==='ArrowUp'||event.key==='ArrowDown'){event.stopPropagation();}});
+document.addEventListener('input',event=>{if(event.target.matches('#qty-input'))setTicketQuantity(event.target.value)});
+document.addEventListener('change',event=>{if(event.target.matches('#qty-input'))setTicketQuantity(event.target.value)});
+document.addEventListener('keydown',event=>{if(event.target.matches('#qty-input')&&(event.key==='ArrowUp'||event.key==='ArrowDown'))event.stopPropagation();});
 
 
 /* ==========================================================
@@ -3751,7 +3747,7 @@ function updateCartCount() {
 
 function renderCart() {
   const c = $('cart-items');
-  if (cart.length === 0) {
+  if (!cart.length) {
     c.innerHTML = `
       <div class="empty-state">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
@@ -3761,25 +3757,49 @@ function renderCart() {
   }
   c.innerHTML = cart.map((item, i) => `
     <div class="cart-item">
-      <div class="cart-item-swatch" style="background:${item.color}"></div>
+      <div class="cart-item-swatch" style="background:${escapeTicketText(item.color||'#6366f1')}"></div>
       <div class="cart-item-info">
-        <h4>${item.tierName}</h4>
-        <div class="meta">${item.qty} ticket${item.qty > 1 ? 's' : ''} · $${item.unitPrice} each</div>
-        <div class="price-line">$${item.unitPrice * item.qty}</div>
+        <h4>${escapeTicketText(item.tierName)}</h4>
+        <div class="meta">$ ${Number(item.unitPrice).toFixed(2)} each</div>
+        <div class="price-line">$ ${(Number(item.unitPrice)*Number(item.qty)).toFixed(2)}</div>
+        <div class="cart-quantity-controls" style="display:flex;align-items:center;gap:10px;margin-top:8px">
+          <button type="button" class="btn btn-outline" data-cart-minus="${i}" aria-label="Decrease quantity" style="min-width:38px;padding:6px 12px">−</button>
+          <strong aria-live="polite">${Number(item.qty)}</strong>
+          <button type="button" class="btn btn-outline" data-cart-plus="${i}" aria-label="Increase quantity" style="min-width:38px;padding:6px 12px" ${cart.reduce((n,x)=>n+Number(x.qty||0),0)>=8?'disabled':''}>+</button>
+        </div>
       </div>
-      <button class="cart-item-remove" data-remove="${i}" aria-label="Remove">
+      <button type="button" class="cart-item-remove" data-remove="${i}" aria-label="Remove ticket category">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
       </button>
     </div>`).join('');
-  c.querySelectorAll('[data-remove]').forEach(btn => btn.addEventListener('click', () => {
-    if (ticketReservationIds.length) releaseActiveTicketReservations();
-    cart.splice(parseInt(btn.dataset.remove), 1);
-    updateCartCount();
-    renderCart();
-    if (cart.length === 0) closeDrawer();
+  c.querySelectorAll('[data-remove],[data-cart-minus],[data-cart-plus]').forEach(btn => btn.addEventListener('click', async () => {
+    if (reservationInProgress) return (window.showToast||alert)('Please wait while availability is checked.');
+    const index=Number(btn.dataset.remove ?? btn.dataset.cartMinus ?? btn.dataset.cartPlus);
+    const item=cart[index]; if(!item)return;
+    const isRemove=btn.hasAttribute('data-remove'),isMinus=btn.hasAttribute('data-cart-minus');
+    if(isRemove){
+      if(ticketReservationIds.length)await releaseActiveTicketReservations();
+      cart.splice(index,1);
+    }else if(isMinus){
+      if(Number(item.qty)<=1)return;
+      if(ticketReservationIds.length)await releaseActiveTicketReservations();
+      item.qty=Number(item.qty)-1;
+    }else{
+      const total=cart.reduce((n,x)=>n+Number(x.qty||0),0);
+      if(total>=8)return (window.showToast||alert)('The maximum is 8 tickets per order.');
+      const tier=TIERS[item.tierId];
+      if(tier){
+        const remaining=Math.max(0,Number(tier.quantity_total)-Number(tier.quantity_sold));
+        if(Number(item.qty)>=remaining)return (window.showToast||alert)('No more tickets are available in this category.');
+      }
+      if(ticketReservationIds.length)await releaseActiveTicketReservations();
+      item.qty=Number(item.qty)+1;
+    }
+    updateCartCount();renderCart();
+    if(!cart.length)closeDrawer();
+    if($('continue-1'))$('continue-1').textContent='Continue · $'+calcTotals().total;
   }));
 }
-
 function calcTotals() {
   const subtotal = cart.reduce((s, i) => s + i.unitPrice * i.qty, 0);
   const fees = Math.round(subtotal * SERVICE_FEE_RATE);
