@@ -3787,34 +3787,54 @@ function renderCart() {
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
       </button>
     </div>`).join('');
-  c.querySelectorAll('[data-remove],[data-cart-minus],[data-cart-plus]').forEach(btn => btn.addEventListener('click', async () => {
-    if (reservationInProgress) return (window.showToast||alert)('Please wait while availability is checked.');
-    const index=Number(btn.dataset.remove ?? btn.dataset.cartMinus ?? btn.dataset.cartPlus);
-    const item=cart[index]; if(!item)return;
-    const isRemove=btn.hasAttribute('data-remove'),isMinus=btn.hasAttribute('data-cart-minus');
-    if(isRemove){
-      if(ticketReservationIds.length)await releaseActiveTicketReservations();
-      cart.splice(index,1);
-    }else if(isMinus){
-      if(Number(item.qty)<=1)return;
-      if(ticketReservationIds.length)await releaseActiveTicketReservations();
-      item.qty=Number(item.qty)-1;
-    }else{
-      const total=cart.reduce((n,x)=>n+Number(x.qty||0),0);
-      if(total>=8)return (window.showToast||alert)('The maximum is 8 tickets per order.');
-      const tier=TIERS[item.tierId];
-      if(tier){
-        const remaining=Math.max(0,Number(tier.quantity_total)-Number(tier.quantity_sold));
-        if(Number(item.qty)>=remaining)return (window.showToast||alert)('No more tickets are available in this category.');
-      }
-      if(ticketReservationIds.length)await releaseActiveTicketReservations();
-      item.qty=Number(item.qty)+1;
-    }
-    updateCartCount();renderCart();
-    if(!cart.length)closeDrawer();
-    if($('continue-1'))$('continue-1').textContent='Continue · $'+calcTotals().total;
-  }));
 }
+
+// Delegate cart item actions from the stable document so controls keep working
+// whenever renderCart() replaces the cart drawer markup.
+document.addEventListener('click', async event => {
+  const target = event.target instanceof Element ? event.target.closest('#cart-items [data-remove], #cart-items [data-cart-minus], #cart-items [data-cart-plus]') : null;
+  if (!target) return;
+  event.preventDefault();
+  if (reservationInProgress) return (window.showToast || alert)('Please wait while availability is checked.');
+  const index = Number(target.dataset.remove ?? target.dataset.cartMinus ?? target.dataset.cartPlus);
+  const item = cart[index];
+  if (!item) return;
+  const isRemove = target.hasAttribute('data-remove');
+  const isMinus = target.hasAttribute('data-cart-minus');
+  target.disabled = true;
+  try {
+    if (isRemove) {
+      if (ticketReservationIds.length) await releaseActiveTicketReservations();
+      cart.splice(index, 1);
+    } else if (isMinus) {
+      if (Number(item.qty) <= 1) return;
+      if (ticketReservationIds.length) await releaseActiveTicketReservations();
+      item.qty = Number(item.qty) - 1;
+    } else {
+      const total = cart.reduce((n, x) => n + Number(x.qty || 0), 0);
+      if (total >= 8) return (window.showToast || alert)('The maximum is 8 tickets per order.');
+      const tier = TIERS[item.tierId];
+      if (tier) {
+        const remaining = Math.max(0, Number(tier.quantity_total) - Number(tier.quantity_sold));
+        if (Number(item.qty) >= remaining) return (window.showToast || alert)('No more tickets are available in this category.');
+      }
+      if (ticketReservationIds.length) await releaseActiveTicketReservations();
+      item.qty = Number(item.qty) + 1;
+    }
+    updateCartCount();
+    renderCart();
+    if (!cart.length) closeDrawer();
+    const continueButton = $('continue-1');
+    if (continueButton) continueButton.textContent = 'Continue · $' + calcTotals().total;
+    if ($('order-summary-2')) renderOrderBox('order-summary-2');
+    if ($('order-summary-3')) renderOrderBox('order-summary-3');
+  } catch (error) {
+    console.error('TicketNest cart update failed:', error);
+    (window.showToast || alert)(error.message || 'Could not update your cart. Please try again.');
+  } finally {
+    if (target.isConnected) target.disabled = false;
+  }
+});
 function calcTotals() {
   const subtotal = cart.reduce((s, i) => s + i.unitPrice * i.qty, 0);
   const fees = Math.round(subtotal * SERVICE_FEE_RATE);
