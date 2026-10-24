@@ -2350,6 +2350,7 @@ body[data-theme="dark"] .auth-demo-note{border-top-color:#2b3545;color:#8f9bad}
 #ticket-quantity-sheet .tnq-option{height:64px;border:1.5px solid #c5cbd1;border-radius:22px;background:#fff;color:#151b22;font-size:22px;font-weight:500}
 #ticket-quantity-sheet .tnq-option[aria-pressed="true"]{border:3px solid #20262c;box-shadow:inset 0 0 0 1px #fff}
 #ticket-quantity-sheet .tnq-continue{display:block;width:100%;height:64px;margin-top:28px;border:0;border-radius:22px;background:#6425bb;color:white;font-size:20px;font-weight:650}
+#ticket-quantity-sheet .tnq-continue:disabled{opacity:.65;cursor:wait}
 #ticket-quantity-sheet .tnq-note{font-size:12px;color:#737b84;text-align:center;margin:14px 0 0}
 body.tn-quantity-open{overflow:hidden!important}
 @media(min-width:761px){#ticket-quantity-overlay{align-items:center;padding:24px}#ticket-quantity-sheet{border-radius:28px;max-width:560px}}
@@ -3462,6 +3463,8 @@ let ticketNestRequestedQuantity = 1;
 function openTicketQuantitySheet() {
   const overlay = document.getElementById('ticket-quantity-overlay');
   if (!overlay) return;
+  const continueButton = document.getElementById('tnq-continue');
+  if (continueButton) { continueButton.disabled = true; continueButton.textContent = 'Loading tickets…'; }
   ticketNestRequestedQuantity = 1;
   overlay.querySelectorAll('[data-tn-quantity]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.tnQuantity === '1')));
   overlay.classList.add('open');
@@ -3488,6 +3491,7 @@ function closeTicketQuantitySheet() {
     if (event.target === overlay) closeTicketQuantitySheet();
   });
   document.getElementById('tnq-continue')?.addEventListener('click', () => {
+    if (document.getElementById('tnq-continue')?.disabled) return;
     const requested = ticketNestRequestedQuantity;
     closeTicketQuantitySheet();
     const available = Object.values(TIERS).filter(t => Math.max(0, Number(t.quantity_total) - Number(t.quantity_sold)) >= requested);
@@ -3536,7 +3540,10 @@ function closeTicketQuantitySheet() {
   v.querySelector('.breadcrumb li:last-child').textContent = e.title;
   v.querySelector('#gallery-main-img').src = e.img;
   v.querySelector('.summary-event img').src = e.img;
-  loadEventTicketOptions(e.id).catch(error=>console.error('Ticket options:',error));
+  loadEventTicketOptions(e.id).catch(error=>console.error('Ticket options:',error)).finally(() => {
+    const continueButton = document.getElementById('tnq-continue');
+    if (continueButton) { continueButton.disabled = false; continueButton.textContent = 'Continue'; }
+  });
 }
 
 const grid = $('trending-grid');
