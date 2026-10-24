@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#026CDF">
+<title>Verify Ticket | TicketNest</title>
+<style>
+:root{font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#172033;background:#f4f7fb}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px}
+.card{width:min(100%,520px);background:#fff;border:1px solid #e4e9f1;border-radius:20px;padding:28px;box-shadow:0 16px 45px #15223812}
+.brand{font-weight:900;color:#026CDF;font-size:22px;letter-spacing:-.5px;margin-bottom:24px}
+.badge{display:inline-flex;padding:7px 12px;border-radius:999px;background:#eef2f7;color:#536173;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.6px}
+.badge.valid{background:#e5f8ef;color:#087443}.badge.invalid{background:#fff0f0;color:#b42318}
+h1{font-size:27px;line-height:1.2;margin:16px 0 8px}p{color:#5b6677;line-height:1.6}
+dl{margin:24px 0 0;border-top:1px solid #e8edf3}dl div{padding:14px 0;border-bottom:1px solid #e8edf3;display:flex;justify-content:space-between;gap:18px}dt{color:#687386;font-size:13px}dd{margin:0;text-align:right;font-weight:700;overflow-wrap:anywhere}
+.note{font-size:12px;margin-top:20px}.back{display:inline-block;margin-top:20px;color:#026CDF;font-weight:700;text-decoration:none}
+.loading{padding:24px 0;color:#5b6677}
+</style>
+</head>
+<body>
+<main class="card">
+  <div class="brand">TicketNest</div>
+  <div id="result"><div class="loading">Checking ticket status securely…</div></div>
+  <a class="back" href="/">← Back to TicketNest</a>
+</main>
+<script>
+(async function(){
+ const root=document.getElementById('result');
+ const code=new URLSearchParams(location.search).get('code')||'';
+ const supabaseUrl='https://pqsnukgwqvjrsuuqlalz.supabase.co';
+ const publicKey='sb_publishable_Tq_IzpwKECj5oN1tWZgP8A.eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9';
+ if(!/^[a-f0-9]{24}$/i.test(code)){root.innerHTML='<span class="badge invalid">Invalid reference</span><h1>Ticket could not be verified</h1><p>This QR code does not contain a valid TicketNest reference.</p>';return;}
+ try{
+  const response=await fetch(supabaseUrl+'/functions/v1/ticket-verify',{method:'POST',headers:{'Content-Type':'application/json','apikey':publicKey},body:JSON.stringify({code})});
+  const data=await response.json();
+  if(!response.ok) throw new Error(data.error||'Verification service unavailable');
+  const valid=data.valid===true;
+  const esc=v=>String(v||'—').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  root.innerHTML='<span class="badge '+(valid?'valid':'invalid')+'">'+(valid?'Valid ticket':'Not valid for entry')+'</span><h1>'+(valid?'Ticket verified':'Ticket not valid')+'</h1><p>'+(valid?'This ticket exists in TicketNest and currently has a valid status.':'This ticket is not currently marked as valid. Do not admit entry based on this result.')+'</p><dl><div><dt>Event</dt><dd>'+esc(data.event)+'</dd></div><div><dt>Venue</dt><dd>'+esc(data.venue)+'</dd></div><div><dt>Event date</dt><dd>'+esc(data.starts_at?new Date(data.starts_at).toLocaleString():'To be announced')+'</dd></div><div><dt>Ticket reference</dt><dd>'+esc(data.ticket_reference)+'</dd></div><div><dt>Status</dt><dd>'+esc(data.status)+'</dd></div></dl><p class="note">This page checks the ticket’s current status. It does not mark the ticket as used or replace an authorized venue check-in system.</p>';
+ }catch(e){root.innerHTML='<span class="badge invalid">Unable to verify</span><h1>Try again</h1><p>The verification service could not be reached. Please try again before making an entry decision.</p>';}
+})();
+</script>
+</body>
+</html>
