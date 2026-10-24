@@ -561,6 +561,17 @@
   .mobile-cta .info { flex: 1; min-width: 0; }
   .mobile-cta .info strong { display: block; font-size: 15px; font-weight: 800; letter-spacing: -.2px; }
   .mobile-cta .info small { font-size: 11.5px; color: var(--muted); }
+  .mobile-cta { color: #14181F; padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+  .mobile-cta .info strong { color: #14181F !important; }
+  .mobile-cta .info small { color: #475569 !important; }
+  body[data-theme="dark"] .mobile-cta { background: #111A27; border-color: #354155; color: #F3F4F6; }
+  body[data-theme="dark"] .mobile-cta .info strong { color: #F3F4F6 !important; }
+  body[data-theme="dark"] .mobile-cta .info small { color: #CBD5E1 !important; }
+  .mobile-cta .btn { flex: 0 0 auto; min-width: 128px; white-space: nowrap; }
+  body[data-theme="dark"] .fav-card { color: #F3F4F6; background: #111A27; border-color: #354155; }
+  body[data-theme="dark"] .fav-card h3, body[data-theme="dark"] .fav-price { color: #F3F4F6; }
+  body[data-theme="dark"] .fav-venue, body[data-theme="dark"] .fav-price small { color: #CBD5E1; }
+
 
   /* Cart drawer */
   .drawer-overlay {
@@ -3492,8 +3503,21 @@ grid.addEventListener('click', (ev) => {
   const fav = ev.target.closest('[data-fav]');
   if (fav) {
     ev.stopPropagation();
-    fav.classList.toggle('active');
-    fav.setAttribute('aria-pressed', fav.classList.contains('active'));
+    const card = fav.closest('.event-card');
+    const event = card ? events[Number(card.dataset.index)] : null;
+    if (!event) return;
+    let saved = [];
+    try { saved = JSON.parse(localStorage.getItem('ticketnest-favorites') || '[]'); } catch (_) {}
+    const key = String(event.id || event.title);
+    const exists = saved.some(item => String(item.id || item.title) === key);
+    if (exists) saved = saved.filter(item => String(item.id || item.title) !== key);
+    else saved.push({ id: event.id || key, title: event.title, event: event.title, cat: event.category || 'Event', category: event.category || 'Event', venue: event.venue || '', month: event.month || '', day: event.day || '', price: event.price || event.price_usd || 0, image: event.image || '', img: event.img || '' });
+    try { localStorage.setItem('ticketnest-favorites', JSON.stringify(saved)); } catch (_) {}
+    fav.classList.toggle('active', !exists);
+    fav.setAttribute('aria-pressed', String(!exists));
+    fav.setAttribute('aria-label', exists ? 'Save event' : 'Remove from favorites');
+    if (typeof window.ticketNestRenderFavorites === 'function') window.ticketNestRenderFavorites();
+    if (typeof window.showToast === 'function') window.showToast(exists ? 'Removed from favorites' : 'Saved to favorites');
     return;
   }
   const card = ev.target.closest('.event-card[data-go]');
@@ -4818,11 +4842,13 @@ $('done-btn').addEventListener('click', () => { closeDrawer(); showView('home');
 
   function renderFavorites() {
     const grid = $('favorites-grid');
-    if (!FAVORITES.length) {
+    let favorites = [];
+    try { favorites = JSON.parse(localStorage.getItem('ticketnest-favorites') || '[]'); } catch (_) {}
+    if (!Array.isArray(favorites) || !favorites.length) {
       grid.innerHTML = `<div class="empty-tickets" style="grid-column:1/-1"><h3>No favorites yet</h3><p>Tap the heart icon on any event to save it here for later.</p></div>`;
       return;
     }
-    grid.innerHTML = FAVORITES.map((f, i) => `
+    grid.innerHTML = favorites.map((f, i) => `
       <article class="fav-card">
         <div class="fav-media">
           <img src="https://images.unsplash.com/photo-${f.img}?w=600&q=80&auto=format&fit=crop" alt="${f.event}" loading="lazy" />
@@ -4842,6 +4868,17 @@ $('done-btn').addEventListener('click', () => { closeDrawer(); showView('home');
         </div>
       </article>`).join('');
   }
+
+  window.ticketNestRenderFavorites = renderFavorites;
+  $('favorites-grid').addEventListener('click', (event) => {
+    const button = event.target.closest('[data-unfav]');
+    if (!button) return;
+    let saved = [];
+    try { saved = JSON.parse(localStorage.getItem('ticketnest-favorites') || '[]'); } catch (_) {}
+    saved.splice(Number(button.dataset.unfav), 1);
+    try { localStorage.setItem('ticketnest-favorites', JSON.stringify(saved)); } catch (_) {}
+    renderFavorites();
+  });
 
   function updateStats() {
     $('stat-upcoming').textContent = TICKETS.length;
