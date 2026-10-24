@@ -5496,5 +5496,90 @@ $('done-btn').addEventListener('click', () => { closeDrawer(); showView('home');
 })();
 </script>
 
+
+<script>
+/* Independent recovery for the event seating widget. If the main page script
+   fails before initializing ticket options, this loads the live Supabase data. */
+(function () {
+  const SUPABASE = 'https://pqsnukgwqvjrsuuqlalz.supabase.co';
+  const PUBLIC_KEY = 'sb_publishable_Tq_IzpwKECCoDg5nVqZC-A_S0XGlv5B';
+  const esc = value => String(value == null ? '' : value).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+  async function recoverSeatingWidget() {
+    const map = document.getElementById('seat-map');
+    const list = document.getElementById('tier-list');
+    const legend = document.getElementById('seat-map-legend');
+    if (!map || !list || !legend || !/Loading event zones/i.test(map.textContent)) return;
+    const eventTitle = document.querySelector('[data-view="event"] .summary-event h3')?.textContent?.trim() || document.querySelector('[data-view="event"] h1')?.textContent?.trim() || 'The final coach';
+    const headers = { apikey: PUBLIC_KEY, Authorization: 'Bearer ' + PUBLIC_KEY, Accept: 'application/json' };
+    const get = async (table, params) => {
+      const url = new URL(SUPABASE + '/rest/v1/' + table);
+      Object.entries(params).forEach(([key, value]) => url.searchParams.set(key, value));
+      const response = await fetch(url.toString(), { headers, cache: 'no-store' });
+      if (!response.ok) throw new Error(table + ' request failed (' + response.status + ')');
+      return response.json();
+    };
+    try {
+      const found = await get('events', {select:'id,title,venue,city,starts_at,category,status',title:'eq.' + eventTitle, status:'eq.published',order:'starts_at.asc',limit:'1'});
+      if (!Array.isArray(found) || !found.length) throw new Error('Could not find this published event. Open it from the event catalogue and try again.');
+      const event = found[0];
+      const [tiers, zones] = await Promise.all([
+        get('ticket_tiers', {select:'id,event_id,name,price_usd,quantity_total,quantity_sold',event_id:'eq.' + event.id,order:'created_at.asc'}),
+        get('event_seating_zones', {select:'id,event_id,ticket_tier_id,name,color,display_order',event_id:'eq.' + event.id,order:'display_order.asc'})
+      ]);
+      const available = (Array.isArray(tiers) ? tiers : []).filter(t => Number(t.quantity_total || 0) > Number(t.quantity_sold || 0));
+      if (!available.length) {
+        list.innerHTML = '<div class="empty-state"><p>No available ticket categories are configured for this event.</p></div>';
+        map.innerHTML = '<rect class="stage" x="150" y="10" width="200" height="34" rx="6"/><text class="stage-text" x="250" y="32">STAGE</text><text x="250" y="230" text-anchor="middle" fill="currentColor" font-size="13">No available tickets</text>';
+        legend.textContent = 'No available ticket categories.';
+        return;
+      }
+      const tierById = Object.fromEntries(available.map(t => [t.id, t]));
+      const goodZones = (Array.isArray(zones) ? zones : []).filter(z => tierById[z.ticket_tier_id] && /^#[0-9a-f]{6}$/i.test(z.color || ''));
+      available.forEach(t => { t._color = goodZones.find(z => z.ticket_tier_id === t.id)?.color || '#6366f1'; });
+      list.innerHTML = available.map(t => '<button type="button" class="tier-card" data-recovery-tier="' + esc(t.id) + '"><span class="tier-swatch" style="background:' + t._color + '"></span><span class="tier-info"><span class="tier-name">' + esc(t.name) + '</span><span class="tier-desc">' + Math.max(0, Number(t.quantity_total)-Number(t.quantity_sold)) + ' available</span></span><span class="tier-price"><strong>
+ + Number(t.price_usd || 0).toFixed(2) + '</strong><small>per ticket</small></span></button>').join('');
+      if (!goodZones.length) {
+        map.innerHTML = '<rect class="stage" x="150" y="10" width="200" height="34" rx="6"/><text class="stage-text" x="250" y="32">STAGE</text><text x="250" y="230" text-anchor="middle" fill="currentColor" font-size="13">Map sections not configured</text>';
+        legend.textContent = 'Ticket categories are available below; the administrator has not added map zones yet.';
+      } else {
+        const cols = goodZones.length === 1 ? 1 : goodZones.length === 2 ? 2 : 3, gap = 8, pad = 18;
+        const w = (500 - pad*2 - gap*(cols-1))/cols, h = Math.min(75, 400/Math.ceil(goodZones.length/cols));
+        let svg = '<rect class="stage" x="150" y="10" width="200" height="34" rx="6"/><text class="stage-text" x="250" y="32">STAGE</text>';
+        goodZones.forEach((z,i) => {
+          const t = tierById[z.ticket_tier_id], x = pad+(i%cols)*(w+gap), y = 58+Math.floor(i/cols)*(h+gap);
+          svg += '<g class="seat-zone-group" data-recovery-tier="' + esc(t.id) + '" tabindex="0" role="button" style="cursor:pointer"><rect class="seat-section" x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" rx="8" style="fill:' + z.color + ';stroke:#fff;stroke-width:2"/><text class="seat-label" x="' + (x+w/2) + '" y="' + (y+h/2-4) + '" text-anchor="middle">' + esc(z.name).slice(0,24) + '</text><text class="seat-label" x="' + (x+w/2) + '" y="' + (y+h/2+13) + '" text-anchor="middle">
+ + Number(t.price_usd || 0).toFixed(2) + '</text></g>';
+        });
+        map.innerHTML = svg;
+        legend.innerHTML = goodZones.map(z => '<span><span class="swatch" style="background:' + z.color + '"></span>' + esc(z.name) + '</span>').join('');
+      }
+      const choose = id => {
+        const card = list.querySelector('[data-recovery-tier="' + CSS.escape(id) + '"]');
+        if (card) card.classList.add('selected');
+        list.querySelectorAll('[data-recovery-tier]').forEach(el => el.classList.toggle('selected', el.dataset.recoveryTier === id));
+        map.querySelectorAll('[data-recovery-tier]').forEach(el => el.classList.toggle('selected', el.dataset.recoveryTier === id));
+        if (typeof window.selectTier === 'function') window.selectTier(id);
+        const t = tierById[id];
+        const summary = document.querySelector('[data-view="event"] .summary-event .meta');
+        if (summary && t) summary.textContent = event.title + ' · ' + t.name + ' · 
+ + Number(t.price_usd || 0).toFixed(2);
+      };
+      list.querySelectorAll('[data-recovery-tier]').forEach(el => el.addEventListener('click', () => choose(el.dataset.recoveryTier)));
+      map.querySelectorAll('[data-recovery-tier]').forEach(el => {
+        el.addEventListener('click', () => choose(el.dataset.recoveryTier));
+        el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); choose(el.dataset.recoveryTier); } });
+      });
+    } catch (error) {
+      list.innerHTML = '<div class="empty-state"><p>Ticket options could not load: ' + esc(error.message) + '</p><p>Please refresh the page and try again.</p></div>';
+      map.innerHTML = '<text x="250" y="230" text-anchor="middle" fill="currentColor" font-size="13">Map could not load</text>';
+      legend.textContent = 'Live seating map connection failed.';
+      console.error('TicketNest seating recovery:', error);
+    }
+  }
+  window.setTimeout(recoverSeatingWidget, 1200);
+  window.addEventListener('hashchange', () => window.setTimeout(recoverSeatingWidget, 300));
+})();
+</script>
+
 </body>
 </html>
