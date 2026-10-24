@@ -2616,7 +2616,7 @@ body[data-theme="dark"] .auth-demo-note{border-top-color:#2b3545;color:#8f9bad}
                 </div>
               </div>
               <div class="summary-cta" id="summary-cta" style="display:none;">
-                <button class="btn btn-primary btn-lg btn-block" id="add-to-cart-btn">
+                <button type="button" class="btn btn-primary btn-lg btn-block" id="add-to-cart-btn">
                   Add to Cart
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
                 </button>
@@ -3652,12 +3652,18 @@ async function loadEventTicketOptions(eventId){
   }
 }
 function selectTier(key) {
-  if(!TIERS[key]||TIERS[key].quantity_total<=TIERS[key].quantity_sold)return;
-  selectedTier=key;qty=1;$('qty-input').value=1;
+  const tier=TIERS[key];
+  if(!tier||Number(tier.quantity_total)<=Number(tier.quantity_sold))return;
+  selectedTier=key;
+  const remaining=Math.max(0,Number(tier.quantity_total)-Number(tier.quantity_sold));
+  qty=Math.min(Math.max(1,Number(qty)||1),Math.min(8,remaining));
+  $('qty-input').value=String(qty);
+  $('qty-input').max=String(Math.min(8,remaining));
   document.querySelectorAll('.tier-card').forEach(c=>c.classList.toggle('selected',c.dataset.tier===key));
-  document.querySelectorAll('.seat-section').forEach(s=>s.classList.toggle('selected',s.dataset.tier===key));
+  document.querySelectorAll('.seat-section').forEach(el=>el.classList.toggle('selected',el.dataset.tier===key));
   updateSummary();
 }
+window.selectTier=selectTier;
 function getUnitPrice(key){return TIERS[key]?.price||0}
 function tierLabel(key){return TIERS[key]?.name||'Ticket'}
 function updateSummary() {
@@ -3669,23 +3675,42 @@ function updateSummary() {
   content.innerHTML='<div class="summary-lines"><div class="summary-line"><span>Section</span><strong>'+escapeTicketText(t.name)+'</strong></div><div class="summary-line"><span>Price per ticket</span><strong>$'+unit.toFixed(2)+'</strong></div><div class="summary-line"><span>Available</span><strong>'+Math.max(0,t.quantity_total-t.quantity_sold)+'</strong></div><div class="summary-line"><span>Quantity</span><strong>'+qty+'</strong></div><div class="summary-line"><span>Service fee (preview rate; configurable by admin)</span><strong>$'+fees.toFixed(2)+'</strong></div><div class="summary-line total"><span>Total</span><strong>$'+total.toFixed(2)+'</strong></div></div>';
   cta.style.display='block';mPrice.textContent='$'+total.toFixed(2);mDetail.textContent=t.name+' · '+qty+' ticket'+(qty>1?'s':'');mBtn.disabled=false;
 }
-$('qty-minus').addEventListener('click',()=>{if(qty>1){qty--;$('qty-input').value=qty;updateSummary()}});
-$('qty-plus').addEventListener('click',()=>{const t=TIERS[selectedTier];if(qty<8&&t&&qty<t.quantity_total-t.quantity_sold){qty++;$('qty-input').value=qty;updateSummary()}});
-$('qty-input').addEventListener('input',e=>{const t=TIERS[selectedTier];let v=parseInt(e.target.value)||1;v=Math.min(8,t?Math.max(1,t.quantity_total-t.quantity_sold):8);qty=v;e.target.value=v;updateSummary()});
+function setTicketQuantity(value){
+  const t=TIERS[selectedTier];
+  if(!t){qty=1;$('qty-input').value='1';return updateSummary();}
+  const remaining=Math.max(0,Number(t.quantity_total)-Number(t.quantity_sold));
+  if(remaining<1){qty=1;$('qty-input').value='1';return updateSummary();}
+  const max=Math.min(8,remaining);
+  const parsed=Number.parseInt(value,10);
+  qty=Math.max(1,Math.min(max,Number.isFinite(parsed)?parsed:1));
+  $('qty-input').value=String(qty);
+  $('qty-input').max=String(max);
+  updateSummary();
+}
+$('qty-minus').addEventListener('click',()=>setTicketQuantity(qty-1));
+$('qty-plus').addEventListener('click',()=>{if(!selectedTier){const first=Object.values(TIERS).find(t=>t.quantity_total>t.quantity_sold);if(first)selectTier(first.id);else return (window.showToast||alert)('Choose an available ticket category first.');}setTicketQuantity(qty+1)});
+$('qty-input').addEventListener('input',e=>setTicketQuantity(e.target.value));
+$('qty-input').addEventListener('change',e=>setTicketQuantity(e.target.value));
 
 /* ==========================================================
    EVENT: CART
 ============================================================ */
 function addToCart() {
-  if (!selectedTier||!TIERS[selectedTier]) return;
-  if (ticketReservationIds.length) releaseActiveTicketReservations();
-  const tier=TIERS[selectedTier],unit=tier.price,name=tier.name;
-  if(qty>tier.quantity_total-tier.quantity_sold){(window.showToast||alert)('There are not enough tickets remaining in this category.');return;}
-  const inCart=cart.reduce((s,i)=>s+i.qty,0);
-  if(inCart+qty>8){(window.showToast||alert)(`Your cart already has ${inCart} tickets. The limit is 8 per order.`);return;}
-  const existing=cart.find(i=>i.tierId===tier.id);
-  if(existing){if(existing.qty+qty>tier.quantity_total-tier.quantity_sold){(window.showToast||alert)('There are not enough tickets remaining in this category.');return;}existing.qty+=qty;}
-  else cart.push({tierId:tier.id,eventId:activeTicketEvent,tierName:name,unitPrice:unit,qty,color:tier.color});
+  const notify=window.showToast||((message)=>window.alert(message));
+  if(!activeTicketEvent){notify('Please open an event and wait for its ticket categories to load.');return;}
+  let tier=selectedTier?TIERS[selectedTier]:null;
+  if(!tier){const selectedCard=document.querySelector('.tier-card.selected[data-tier]');const key=selectedCard?.dataset.tier;if(key&&TIERS[key]){selectTier(key);tier=TIERS[key];}}
+  if(!tier){notify('Please select a ticket category before adding tickets to your cart.');return;}
+  if(Number(tier.quantity_total)<=Number(tier.quantity_sold)){notify('This ticket category is sold out. Please choose another.');return;}
+  if(ticketReservationIds.length) releaseActiveTicketReservations();
+  const unit=Number(tier.price)||0,name=tier.name,remaining=Math.max(0,Number(tier.quantity_total)-Number(tier.quantity_sold));
+  const requested=Math.max(1,Math.min(8,Number(qty)||1));
+  if(requested>remaining){notify('There are not enough tickets remaining in this category.');return;}
+  const inCart=cart.reduce((sum,item)=>sum+Number(item.qty||0),0);
+  if(inCart+requested>8){notify(`Your cart already has ${inCart} tickets. The limit is 8 per order.`);return;}
+  const existing=cart.find(item=>item.tierId===tier.id&&item.eventId===activeTicketEvent);
+  if(existing){if(existing.qty+requested>remaining){notify('There are not enough tickets remaining in this category.');return;}existing.qty+=requested;}
+  else cart.push({tierId:tier.id,eventId:activeTicketEvent,tierName:name,unitPrice:unit,qty:requested,color:tier.color||'#6366f1'});
   updateCartCount();openDrawer(1);
 }
 $('add-to-cart-btn').addEventListener('click', addToCart);
