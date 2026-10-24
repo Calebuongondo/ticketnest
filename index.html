@@ -2151,6 +2151,171 @@ body[data-theme="dark"] .auth-demo-note{border-top-color:#2b3545;color:#8f9bad}
   }
   .cat-strip-inner a.active { color: var(--tn-blue, #0057C8); }
 
+
+  /* Final visual pass: reference-inspired TicketNest homepage + high-contrast dark mode.
+     Styling only: do not alter the existing event catalogue, filters, navigation, auth, or admin handlers. */
+  .hero { min-height: 390px; }
+  .hero-bg {
+    background-image:
+      linear-gradient(90deg, rgba(0,42,125,.88) 0%, rgba(0,73,173,.73) 55%, rgba(0,83,190,.58) 100%),
+      url("https://images.unsplash.com/photo-1506157786151-b8491531f063?w=2000&q=85&auto=format&fit=crop");
+    background-position: center 48%;
+    background-size: cover;
+  }
+  .hero-content { max-width: 940px; }
+  .hero h1 { text-wrap: balance; }
+  .hero-actions .btn { min-height: 46px; padding: 12px 20px; font-weight: 750; }
+  .section-alt { background: #F6F8FA; }
+  .section-alt .cat-card { min-height: 190px; }
+  .cat-card img { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .cat-card:hover img { transform: scale(1.035); }
+  .event-media img { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .event-body h3, .cat-info h3 { overflow-wrap: anywhere; }
+  .event-venue, .event-date, .event-meta { overflow-wrap: anywhere; }
+  .event-card, .cat-card, .fav-card { min-width: 0; }
+  .event-grid > *, .cat-grid > * { min-width: 0; }
+
+  /* Dark mode: set explicit readable foregrounds on common page surfaces,
+     including older sections whose styles use hard-coded light colours. */
+  body[data-theme="dark"] {
+    background: #090E15 !important;
+    color: #F5F7FB !important;
+    color-scheme: dark;
+  }
+  body[data-theme="dark"] .header,
+  body[data-theme="dark"] .cat-strip,
+  body[data-theme="dark"] .filter-bar,
+  body[data-theme="dark"] .trust-bar,
+  body[data-theme="dark"] .section,
+  body[data-theme="dark"] .section-alt,
+  body[data-theme="dark"] .search-header,
+  body[data-theme="dark"] .search-toolbar,
+  body[data-theme="dark"] .filters,
+  body[data-theme="dark"] .filter-panel,
+  body[data-theme="dark"] .panel,
+  body[data-theme="dark"] .panel-head,
+  body[data-theme="dark"] .account-content,
+  body[data-theme="dark"] .tab-panel,
+  body[data-theme="dark"] .profile-card,
+  body[data-theme="dark"] .settings-section,
+  body[data-theme="dark"] .order-row,
+  body[data-theme="dark"] .transfer-card,
+  body[data-theme="dark"] .checkout-card,
+  body[data-theme="dark"] .event-detail-card,
+  body[data-theme="dark"] .detail-row,
+  body[data-theme="dark"] .ticket-card,
+  body[data-theme="dark"] .modal,
+  body[data-theme="dark"] .drawer,
+  body[data-theme="dark"] .seat-map-wrap {
+    background-color: #0D1520 !important;
+    color: #F2F6FC !important;
+    border-color: #344257 !important;
+  }
+  body[data-theme="dark"] h1,
+  body[data-theme="dark"] h2,
+  body[data-theme="dark"] h3,
+  body[data-theme="dark"] h4,
+  body[data-theme="dark"] h5,
+  body[data-theme="dark"] h6,
+  body[data-theme="dark"] .section-head h2,
+  body[data-theme="dark"] .event-body h3,
+  body[data-theme="dark"] .event-foot .price,
+  body[data-theme="dark"] .profile-meta *,
+  body[data-theme="dark"] .acct-stats *,
+  body[data-theme="dark"] .panel-title,
+  body[data-theme="dark"] .ticket-card *,
+  body[data-theme="dark"] .order-row *,
+  body[data-theme="dark"] .detail-row * {
+    color: #F5F7FB;
+  }
+  body[data-theme="dark"] p,
+  body[data-theme="dark"] li,
+  body[data-theme="dark"] label,
+  body[data-theme="dark"] small,
+  body[data-theme="dark"] .section-head p,
+  body[data-theme="dark"] .event-venue,
+  body[data-theme="dark"] .event-date,
+  body[data-theme="dark"] .event-meta,
+  body[data-theme="dark"] .trust-item,
+  body[data-theme="dark"] .footer-brand p,
+  body[data-theme="dark"] .footer-col a,
+  body[data-theme="dark"] .footer-bottom,
+  body[data-theme="dark"] .muted,
+  body[data-theme="dark"] .helper-text,
+  body[data-theme="dark"] .empty-tickets p,
+  body[data-theme="dark"] .empty-state p {
+    color: #C3CDDA;
+  }
+  body[data-theme="dark"] a:not(.btn):not(.tickets-link):not(.filter-pill):not(.cat-card) {
+    color: #91C6FF;
+  }
+  body[data-theme="dark"] .logo,
+  body[data-theme="dark"] .cat-strip a,
+  body[data-theme="dark"] .header .logo,
+  body[data-theme="dark"] .header .actions a {
+    color: #F5F7FB;
+  }
+  body[data-theme="dark"] input,
+  body[data-theme="dark"] select,
+  body[data-theme="dark"] textarea,
+  body[data-theme="dark"] .header .search,
+  body[data-theme="dark"] .header .search input {
+    background-color: #141E2D !important;
+    color: #F5F7FB !important;
+    border-color: #45566E !important;
+  }
+  body[data-theme="dark"] input::placeholder,
+  body[data-theme="dark"] textarea::placeholder {
+    color: #B3C0D0 !important;
+    opacity: 1;
+  }
+  body[data-theme="dark"] .event-card,
+  body[data-theme="dark"] .cat-card,
+  body[data-theme="dark"] .fav-card,
+  body[data-theme="dark"] .event-body {
+    background-color: #121A26 !important;
+    color: #F5F7FB !important;
+    border-color: #344257 !important;
+  }
+  body[data-theme="dark"] .filter-pill {
+    background: #172334;
+    color: #EAF0F8;
+    border-color: #45566E;
+  }
+  body[data-theme="dark"] .filter-pill.active {
+    background: #80BCFF;
+    border-color: #80BCFF;
+    color: #081525;
+  }
+  body[data-theme="dark"] .btn-primary,
+  body[data-theme="dark"] .search-btn,
+  body[data-theme="dark"] .tickets-link {
+    background-color: #2478E5;
+    border-color: #2478E5;
+    color: #FFFFFF !important;
+  }
+  body[data-theme="dark"] .btn-outline-light {
+    color: #FFFFFF !important;
+    border-color: #FFFFFF;
+  }
+  body[data-theme="dark"] .footer {
+    background: #060A10;
+    color: #F5F7FB;
+    border-color: #344257;
+  }
+  body[data-theme="dark"] .footer .logo { color: #FFFFFF; }
+  body[data-theme="dark"] :is(button, a, input, select, textarea):focus-visible {
+    outline-color: #91C6FF;
+  }
+  @media (max-width: 700px) {
+    .hero { min-height: 320px; }
+    .hero-content { padding: 44px 0 48px; }
+    .hero h1 { font-size: clamp(29px, 8vw, 42px); line-height: 1.1; }
+    .hero-sub { max-width: 34rem; }
+    .section-head { gap: 12px; }
+    .event-card { overflow: hidden; }
+  }
+
 </style>
 </head>
 <body>
