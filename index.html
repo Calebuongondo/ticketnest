@@ -3223,6 +3223,14 @@ function showView(name) {
   document.body.style.overflow = '';
   closeDrawer();
   window.scrollTo({ top: 0 });
+  // A direct navigation to #event must never leave the map in its static loading state.
+  if (name === 'event') {
+    window.setTimeout(() => {
+      if (typeof setEventDetails === 'function' && !activeTicketEvent && Array.isArray(events) && events.length) {
+        setEventDetails(events[0]);
+      }
+    }, 0);
+  }
 }
 
 const menuPanel = $('site-menu');
