@@ -3678,6 +3678,7 @@ $('qty-input').addEventListener('input',e=>{const t=TIERS[selectedTier];let v=pa
 ============================================================ */
 function addToCart() {
   if (!selectedTier||!TIERS[selectedTier]) return;
+  if (ticketReservationIds.length) releaseActiveTicketReservations();
   const tier=TIERS[selectedTier],unit=tier.price,name=tier.name;
   if(qty>tier.quantity_total-tier.quantity_sold){(window.showToast||alert)('There are not enough tickets remaining in this category.');return;}
   const inCart=cart.reduce((s,i)=>s+i.qty,0);
@@ -3720,6 +3721,7 @@ function renderCart() {
       </button>
     </div>`).join('');
   c.querySelectorAll('[data-remove]').forEach(btn => btn.addEventListener('click', () => {
+    if (ticketReservationIds.length) releaseActiveTicketReservations();
     cart.splice(parseInt(btn.dataset.remove), 1);
     updateCartCount();
     renderCart();
@@ -3769,6 +3771,24 @@ let ticketReservationIds = [];
 let reservationExpiresAt = null;
 let reservationCountdownTimer = null;
 let reservationInProgress = false;
+async function releaseActiveTicketReservations() {
+  const ids = ticketReservationIds.slice();
+  ticketReservationIds = [];
+  reservationExpiresAt = null;
+  if (reservationCountdownTimer) { clearInterval(reservationCountdownTimer); reservationCountdownTimer = null; }
+  const timer = $('reservation-countdown');
+  if (timer) timer.textContent = 'Reservation timer will appear after availability is confirmed.';
+  if (!ids.length || !window.ticketNestGetAccessToken) return;
+  try {
+    const token = await window.ticketNestGetAccessToken();
+    if (!token) return;
+    await fetch(TICKETNEST_SUPABASE_URL + '/rest/v1/rpc/release_ticket_reservations', {
+      method: 'POST',
+      headers: { apikey: TICKETNEST_SUPABASE_KEY, Authorization: 'Bearer ' + token, 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ p_reservation_ids: ids })
+    });
+  } catch (error) { console.warn('Could not release reservation immediately; it will expire automatically.', error); }
+}
 async function reserveCartInventory() {
   if (reservationInProgress) return;
   if (!cart.length) throw new Error('Your cart is empty.');
