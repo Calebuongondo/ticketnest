@@ -3696,11 +3696,33 @@ function ensureQuantityTier(){
   selectTier(first.id);
   return true;
 }
-// Bind the quantity controls directly. This avoids missed delegated clicks on mobile.
-const quantityMinusButton=$('qty-minus'),quantityPlusButton=$('qty-plus'),quantityInput=$('qty-input');
-if(quantityMinusButton)quantityMinusButton.addEventListener('click',event=>{event.preventDefault();if(!ensureQuantityTier())return;setTicketQuantity(Number(qty||1)-1);});
-if(quantityPlusButton)quantityPlusButton.addEventListener('click',event=>{event.preventDefault();if(!ensureQuantityTier())return;const tier=TIERS[selectedTier];const maximum=Math.min(8,Math.max(0,Number(tier.quantity_total)-Number(tier.quantity_sold)));if(Number(qty)>=maximum){(window.showToast||alert)('Maximum available quantity is '+maximum+' for this category.');return;}setTicketQuantity(Number(qty||1)+1);});
-if(quantityInput){quantityInput.addEventListener('input',()=>{if(quantityInput.value!=='')setTicketQuantity(quantityInput.value)});quantityInput.addEventListener('change',()=>setTicketQuantity(quantityInput.value));}
+// Use delegated controls so quantity and cart buttons continue working after the UI is refreshed.
+document.addEventListener('click',event=>{
+  const target=event.target instanceof Element?event.target:null;
+  if(!target)return;
+  const plus=target.closest('#qty-plus'),minus=target.closest('#qty-minus');
+  if(plus||minus){
+    event.preventDefault();
+    if(!ensureQuantityTier())return;
+    const tier=TIERS[selectedTier];
+    const maximum=Math.min(8,Math.max(0,Number(tier?.quantity_total)-Number(tier?.quantity_sold)));
+    if(plus&&Number(qty)>=maximum){(window.showToast||alert)('Maximum available quantity is '+maximum+' for this category.');return;}
+    setTicketQuantity(Number(qty||1)+(plus?1:-1));
+    return;
+  }
+  const addButton=target.closest('#add-to-cart-btn, #mobile-cart-btn');
+  if(addButton){
+    event.preventDefault();
+    if(addButton.disabled)return;
+    try{addToCart()}catch(error){console.error('TicketNest add-to-cart error:',error);(window.showToast||alert)(error.message||'Could not add tickets. Please try again.')}
+  }
+});
+document.addEventListener('input',event=>{
+  if(event.target?.matches?.('#qty-input')&&event.target.value!=='')setTicketQuantity(event.target.value);
+});
+document.addEventListener('change',event=>{
+  if(event.target?.matches?.('#qty-input'))setTicketQuantity(event.target.value);
+});
 
 
 /* ==========================================================
@@ -3729,8 +3751,7 @@ function addToCart() {
   updateCartCount();openDrawer(1);
 }
 function handleAddToCartClick(event){event.preventDefault();if(event.currentTarget.disabled)return;try{addToCart()}catch(error){console.error('TicketNest add-to-cart error:',error);(window.showToast||alert)(error.message||'Could not add tickets. Please try again.')}}
-$('add-to-cart-btn')?.addEventListener('click',handleAddToCartClick);
-$('mobile-cart-btn')?.addEventListener('click',handleAddToCartClick);
+// Add-to-cart click handling is delegated above so it survives refreshed event UI.
 
 function updateCartCount() {
   const count = cart.reduce((s, i) => s + i.qty, 0);
