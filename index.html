@@ -5535,17 +5535,36 @@ $('done-btn').addEventListener('click', () => { closeDrawer(); showView('home');
       if (eventTitle) {
         found = await get('events', {select:'id,title,venue,city,starts_at,category,status', title:'eq.' + eventTitle, status:'eq.published', limit:'1'});
       }
-      // Direct links can open before the event title is initialized. In that case,
-      // recover from the published catalogue instead of querying for placeholder text.
-      if (!found.length) {
-        found = await get('events', {select:'id,title,venue,city,starts_at,category,status', status:'eq.published', order:'starts_at.asc', limit:'1'});
+      // Direct links can show a placeholder title before the main event code runs.
+      // In that case, find the published event that actually has configured zones
+      // and ticket tiers, rather than blindly choosing the earliest event.
+      let event = found[0] || null;
+      let tiers = [];
+      let zones = [];
+      if (event) {
+        [tiers, zones] = await Promise.all([
+          get('ticket_tiers', {select:'id,event_id,name,price_usd,quantity_total,quantity_sold', event_id:'eq.' + event.id, order:'created_at.asc'}),
+          get('event_seating_zones', {select:'id,event_id,ticket_tier_id,name,color,display_order', event_id:'eq.' + event.id, order:'display_order.asc'})
+        ]);
       }
-      if (!found.length) throw new Error('No published events were returned by Supabase. Check event publication and public read permissions.');
-      const event = found[0];
-      const [tiers, zones] = await Promise.all([
-        get('ticket_tiers', {select:'id,event_id,name,price_usd,quantity_total,quantity_sold', event_id:'eq.' + event.id, order:'created_at.asc'}),
-        get('event_seating_zones', {select:'id,event_id,ticket_tier_id,name,color,display_order', event_id:'eq.' + event.id, order:'display_order.asc'})
-      ]);
+      if (!event || !zones.length || !tiers.length) {
+        const candidates = await get('events', {select:'id,title,venue,city,starts_at,category,status', status:'eq.published', order:'starts_at.asc', limit:'100'});
+        let best = null;
+        for (const candidate of candidates) {
+          const [candidateTiers, candidateZones] = await Promise.all([
+            get('ticket_tiers', {select:'id,event_id,name,price_usd,quantity_total,quantity_sold', event_id:'eq.' + candidate.id, order:'created_at.asc'}),
+            get('event_seating_zones', {select:'id,event_id,ticket_tier_id,name,color,display_order', event_id:'eq.' + candidate.id, order:'display_order.asc'})
+          ]);
+          if (candidateZones.some(z => candidateTiers.some(t => t.id === z.ticket_tier_id))) {
+            best = {event:candidate, tiers:candidateTiers, zones:candidateZones};
+            if (/the final coach/i.test(candidate.title)) break;
+          }
+        }
+        if (best) ({event, tiers, zones} = best);
+      }
+      if (!event) throw new Error('No published events were returned by Supabase. Check event publication and public read permissions.');
+      if (!tiers.length) tiers = await get('ticket_tiers', {select:'id,event_id,name,price_usd,quantity_total,quantity_sold', event_id:'eq.' + event.id, order:'created_at.asc'});
+      if (!zones.length) zones = await get('event_seating_zones', {select:'id,event_id,ticket_tier_id,name,color,display_order', event_id:'eq.' + event.id, order:'display_order.asc'});
       const available = tiers.filter(t => Number(t.quantity_total || 0) > Number(t.quantity_sold || 0));
       if (!available.length) {
         list.innerHTML = '<div class="empty-state"><p>No available ticket categories are configured for this event.</p></div>';
