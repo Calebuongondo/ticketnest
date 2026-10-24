@@ -3039,8 +3039,8 @@ body.tn-quantity-open{overflow:hidden!important}
         </div>
       </div>
       <div class="wallet-btns" style="flex-direction:column;">
-        <button class="wallet-btn apple" onclick="showToast('Added to Apple Wallet')">Add to Apple Wallet</button>
-        <button class="wallet-btn google" onclick="showToast('Added to Google Wallet')">Add to Google Wallet</button>
+        <button class="wallet-btn apple" type="button" onclick="showToast('Apple Wallet passes are not configured yet. Your ticket remains available in My Tickets.')">Apple Wallet — not available yet</button>
+        <button class="wallet-btn google" type="button" onclick="showToast('Google Wallet passes are not configured yet. Your ticket remains available in My Tickets.')">Google Wallet — not available yet</button>
       </div>
     </div>
   </div>
@@ -4864,8 +4864,8 @@ $('done-btn').addEventListener('click', () => { closeDrawer(); showView('home');
             : `<button disabled title="Not sellable">Sell</button>`}
         </div>
         <div class="wallet-row">
-          <button class="apple" onclick="showToast('Added to Apple Wallet')">Wallet</button>
-          <button class="google" onclick="showToast('Added to Google Wallet')">Google</button>
+          <button class="apple" type="button" onclick="showToast('Apple Wallet passes are not configured yet. Your ticket remains available in My Tickets.')">Apple Wallet unavailable</button>
+          <button class="google" type="button" onclick="showToast('Google Wallet passes are not configured yet. Your ticket remains available in My Tickets.')">Google Wallet unavailable</button>
         </div>
       </div>
     </article>`;
@@ -5197,7 +5197,7 @@ $('done-btn').addEventListener('click', () => { closeDrawer(); showView('home');
         <td><strong>${o.total}</strong></td>
         <td><span class="status-badge ${o.status}">${labels[o.status]}</span></td>
         <td class="order-actions-cell"><a href="#" data-toast="Opening order details">View</a></td>
-      </tr>`).join('') : `<tr><td colspan="6" style="text-align:center;padding:28px;color:var(--muted)">No orders yet. Your order history will appear here after real checkout is enabled.</td></tr>`;
+      </tr>`).join('') : `<tr><td colspan="6" style="text-align:center;padding:28px;color:var(--muted)">No orders yet. Your orders will appear here after you complete a purchase.</td></tr>`;
   }
 
   function renderFavorites() {
