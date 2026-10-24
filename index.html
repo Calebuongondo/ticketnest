@@ -1523,6 +1523,205 @@ body[data-theme="dark"] .auth-demo-note{border-top-color:#2b3545;color:#8f9bad}
     .tickets-link { padding: 6px; }
   }
 
+
+  /* ==========================================================
+     TICKETNEST VISUAL FINISH + DARK MODE CONTRAST FIX
+     Shared marketplace styling, with explicit readable dark surfaces.
+  ========================================================== */
+  .container { width: min(100%, var(--max)); }
+  .section-head h2, .search-title-block h1, .event-info h1 { text-wrap: balance; }
+  .event-card, .cat-card, .filters, .panel, .profile-card, .settings-section,
+  .order-row, .transfer-card, .ticket-card, .event-detail-card, .account-content,
+  .tab-panel, .checkout-card, .newsletter, .modal, .drawer, .cart-drawer {
+    overflow: clip;
+  }
+  .event-card, .cat-card, .filters, .panel, .profile-card, .settings-section,
+  .order-row, .transfer-card, .ticket-card, .event-detail-card, .account-content,
+  .tab-panel, .checkout-card, .newsletter, .modal, .drawer, .cart-drawer {
+    transition: background-color .18s ease, border-color .18s ease, box-shadow .18s ease;
+  }
+  .event-card:focus-within { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(2,108,223,.13); }
+  .event-body h3, .cat-info h3, .event-info h1, .section-head h2 { color: var(--ink); }
+  .event-cat, .section-eyebrow, .event-cat-tag { color: var(--brand); }
+  .btn-primary, .search-btn, .tickets-link, .newsletter button {
+    color: #fff;
+    background-color: var(--brand);
+  }
+  .btn-primary:hover, .search-btn:hover, .tickets-link:hover, .newsletter button:hover {
+    filter: brightness(.94);
+  }
+  .search input, input, select, textarea { min-width: 0; }
+  input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible, a:focus-visible {
+    outline-color: var(--brand);
+  }
+
+  /* Dark mode: override hard-coded light surfaces and low-contrast text
+     used by older sections so every major view remains readable. */
+  body[data-theme="dark"] {
+    --ink: #F4F7FC;
+    --muted: #C0CAD8;
+    --muted-2: #9AA8BA;
+    --line: #344155;
+    --surface: #0A0E14;
+    --surface-2: #121A26;
+    --surface-3: #1C2838;
+    --brand: #78B7FF;
+    --brand-dark: #4B9AFF;
+    --brand-light: #172F4D;
+    background: var(--surface);
+    color: var(--ink);
+  }
+  body[data-theme="dark"] :is(.header, .cat-strip, .filter-bar, .trust-bar, .search-header,
+    .section-alt, .section-alt .section, .filters, .filter-panel, .search-toolbar,
+    .search-header-inner, .search-back, .mobile-filter-bar, .search-empty, .empty-tickets,
+    .empty-state, .search-results, .results-layout, .event-details, .event-detail-card,
+    .detail-row, .panel, .panel-head, .seat-map-wrap, .ticket-card, .account-content,
+    .tab-panel, .profile-card, .settings-section, .order-row, .transfer-card,
+    .checkout-card, .modal, .modal-head, .modal-foot, .drawer, .cart-drawer,
+    .newsletter-wrap, .footer, footer) {
+    background-color: var(--surface-2);
+    color: var(--ink);
+    border-color: var(--line);
+  }
+  body[data-theme="dark"] .header { background: rgba(10,14,20,.97); }
+  body[data-theme="dark"] .cat-strip { background: #0F1722; }
+  body[data-theme="dark"] .cat-strip a,
+  body[data-theme="dark"] .trust-item,
+  body[data-theme="dark"] .filter-group h3,
+  body[data-theme="dark"] .filters-head,
+  body[data-theme="dark"] .panel-head,
+  body[data-theme="dark"] .account-nav button,
+  body[data-theme="dark"] .account-nav a,
+  body[data-theme="dark"] .tab-panel,
+  body[data-theme="dark"] .profile-card,
+  body[data-theme="dark"] .settings-section,
+  body[data-theme="dark"] .order-row,
+  body[data-theme="dark"] .transfer-card,
+  body[data-theme="dark"] .ticket-card,
+  body[data-theme="dark"] .event-detail-card,
+  body[data-theme="dark"] .event-details,
+  body[data-theme="dark"] .detail-row,
+  body[data-theme="dark"] .search-back,
+  body[data-theme="dark"] .sort-select,
+  body[data-theme="dark"] .view-controls,
+  body[data-theme="dark"] .filter-chip,
+  body[data-theme="dark"] .suggestion-chip,
+  body[data-theme="dark"] .page-btn,
+  body[data-theme="dark"] .date-pill,
+  body[data-theme="dark"] .filter-pill {
+    color: var(--ink);
+  }
+  body[data-theme="dark"] :is(.section-alt, .trust-bar, .filter-bar, .search-header, .search-toolbar,
+    .filters, .filter-panel, .panel, .panel-head, .detail-row, .search-back, .search-empty,
+    .empty-state, .empty-tickets, .account-content, .tab-panel, .profile-card, .settings-section,
+    .order-row, .transfer-card, .ticket-card, .event-detail-card, .checkout-card, .modal,
+    .drawer, .cart-drawer, .newsletter-wrap) {
+    background-image: none;
+  }
+  body[data-theme="dark"] :is(h1,h2,h3,h4,h5,h6,p,span,small,strong,em,label,legend,dt,dd,
+    li,td,th,summary,.section-head p,.event-venue,.event-body h3,.cat-info h3,.detail-label,
+    .result-count,.hint,.sub,.ticket-pick small,.filter-group label,.check-row,.breadcrumb,
+    .search-title-block h1,.event-info .subtitle,.account-content p,.panel p,.modal p) {
+    color: var(--ink);
+  }
+  body[data-theme="dark"] :is(.muted,.text-muted,.sub,.hint,.detail-label,.result-count,
+    .event-venue,.ticket-pick small,.section-head p,.search-title-block .eyebrow,
+    .search-title-block p,.event-info .subtitle,.breadcrumb,.empty-state p,.empty-tickets p,
+    .site-menu-note,.form-hint,.help-text,.field-hint,.newsletter p) {
+    color: var(--muted) !important;
+  }
+  body[data-theme="dark"] :is(.hero, .hero-content, .hero h1, .hero-sub, .hero-tag,
+    .hero-actions, .hero-actions a, .hero-actions button, .hero h1 em) {
+    color: #fff;
+  }
+  body[data-theme="dark"] .hero h1 em { color: #B8D9FF; }
+  body[data-theme="dark"] .event-cat,
+  body[data-theme="dark"] .section-eyebrow,
+  body[data-theme="dark"] .event-cat-tag,
+  body[data-theme="dark"] .search-title-block .eyebrow { color: #91C6FF !important; }
+  body[data-theme="dark"] .event-card,
+  body[data-theme="dark"] .cat-card,
+  body[data-theme="dark"] .filters,
+  body[data-theme="dark"] .panel,
+  body[data-theme="dark"] .profile-card,
+  body[data-theme="dark"] .settings-section,
+  body[data-theme="dark"] .order-row,
+  body[data-theme="dark"] .transfer-card,
+  body[data-theme="dark"] .ticket-card,
+  body[data-theme="dark"] .event-detail-card,
+  body[data-theme="dark"] .account-content,
+  body[data-theme="dark"] .tab-panel {
+    background-color: var(--surface-2);
+    border-color: var(--line);
+    box-shadow: 0 3px 14px rgba(0,0,0,.16);
+  }
+  body[data-theme="dark"] .event-foot,
+  body[data-theme="dark"] .panel-head,
+  body[data-theme="dark"] .modal-head,
+  body[data-theme="dark"] .modal-foot { border-color: var(--line); }
+  body[data-theme="dark"] .filter-pill,
+  body[data-theme="dark"] .filter-chip,
+  body[data-theme="dark"] .suggestion-chip,
+  body[data-theme="dark"] .page-btn,
+  body[data-theme="dark"] .sort-select,
+  body[data-theme="dark"] .mf-btn,
+  body[data-theme="dark"] .date-pill,
+  body[data-theme="dark"] .search-back,
+  body[data-theme="dark"] .account-nav button,
+  body[data-theme="dark"] .account-nav a {
+    background-color: var(--surface-3);
+    border-color: var(--line);
+    color: var(--ink);
+  }
+  body[data-theme="dark"] .filter-pill.active,
+  body[data-theme="dark"] .date-pill.active {
+    background: #18385B;
+    border-color: #5AA5FF;
+    color: #E3F0FF;
+  }
+  body[data-theme="dark"] :is(input, select, textarea, .search input, .sort-select) {
+    background-color: #111B29;
+    color: #F4F7FC;
+    border-color: #46556B;
+    caret-color: #F4F7FC;
+  }
+  body[data-theme="dark"] :is(input, textarea)::placeholder { color: #A5B2C4; opacity: 1; }
+  body[data-theme="dark"] select option { background: #121A26; color: #F4F7FC; }
+  body[data-theme="dark"] input[type="checkbox"],
+  body[data-theme="dark"] input[type="radio"] { accent-color: #78B7FF; }
+  body[data-theme="dark"] .btn-outline,
+  body[data-theme="dark"] .search-back,
+  body[data-theme="dark"] .see-all {
+    color: #EAF2FC;
+    border-color: #46556B;
+    background-color: transparent;
+  }
+  body[data-theme="dark"] .btn-primary,
+  body[data-theme="dark"] .search-btn,
+  body[data-theme="dark"] .tickets-link,
+  body[data-theme="dark"] .newsletter button,
+  body[data-theme="dark"] .hero-actions .btn-primary {
+    color: #071321;
+    background-color: #78B7FF;
+    border-color: #78B7FF;
+  }
+  body[data-theme="dark"] .footer, body[data-theme="dark"] footer {
+    background: #080C12;
+    color: #F4F7FC;
+    border-color: #344155;
+  }
+  body[data-theme="dark"] .logo { color: #91C6FF; }
+  body[data-theme="dark"] .logo-mark { box-shadow: none; }
+  body[data-theme="dark"] a:hover { text-decoration-color: currentColor; }
+  body[data-theme="dark"] :is(.success,.status-success,.badge-success) { color: #6EE7B7; }
+  body[data-theme="dark"] :is(.danger,.status-danger,.error,.form-error) { color: #FDA4AF; }
+  @media (max-width: 700px) {
+    .container { padding-left: 16px; padding-right: 16px; }
+    .event-grid, .results-grid { gap: 14px; }
+    .event-body h3 { overflow-wrap: anywhere; }
+    .event-foot { min-width: 0; }
+  }
+
 </style>
 </head>
 <body>
