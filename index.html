@@ -2143,6 +2143,14 @@ body[data-theme="dark"] .auth-demo-note{border-top-color:#2b3545;color:#8f9bad}
     .hero-actions { flex-wrap: wrap; }
   }
 
+
+  /* Category navigation should always match the selected event category. */
+  .cat-strip-inner a { cursor: pointer; }
+  .cat-strip-inner a:focus-visible, .cat-card:focus-visible {
+    outline: 3px solid #80BCFF; outline-offset: 3px; border-radius: 4px;
+  }
+  .cat-strip-inner a.active { color: var(--tn-blue, #0057C8); }
+
 </style>
 </head>
 <body>
@@ -2191,15 +2199,15 @@ body[data-theme="dark"] .auth-demo-note{border-top-color:#2b3545;color:#8f9bad}
   <nav class="cat-strip" aria-label="Categories">
     <div class="container">
       <div class="cat-strip-inner">
-        <a href="#search" class="active" data-go="search">All Events</a>
-        <a href="#search" data-go="search">Concerts</a>
-        <a href="#search" data-go="search">Sports</a>
-        <a href="#search" data-go="search">Arts &amp; Theater</a>
-        <a href="#search" data-go="search">Comedy</a>
-        <a href="#search" data-go="search">Family</a>
-        <a href="#search" data-go="search">Festivals</a>
-        <a href="#search" data-go="search">Broadway</a>
-        <a href="#search" data-go="search">VIP Packages</a>
+        <a href="#search" class="active" data-go="search" data-category="all">All Events</a>
+        <a href="#search" data-go="search" data-category="concerts">Concerts</a>
+        <a href="#search" data-go="search" data-category="sports">Sports</a>
+        <a href="#search" data-go="search" data-category="arts">Arts &amp; Theater</a>
+        <a href="#search" data-go="search" data-category="comedy">Comedy</a>
+        <a href="#search" data-go="search" data-category="family">Family</a>
+        <a href="#search" data-go="search" data-category="festivals">Festivals</a>
+        <a href="#search" data-go="search" data-category="arts">Broadway</a>
+        <a href="#search" data-go="search" data-category="all">VIP Packages</a>
       </div>
     </div>
   </nav>
@@ -3852,7 +3860,23 @@ $('done-btn').addEventListener('click', () => { closeDrawer(); showView('home');
     history.replaceState(null, '', '#search');
     renderSearch();
   };
-  window.ticketNestSelectCategory = function(category) { sState.category = new Set([category]); sState.page=1; renderSearch(); };
+  window.ticketNestSelectCategory = function(category) {
+    const key = String(category || 'all').trim().toLowerCase();
+    if (!key || key === 'all' || key === 'all events' || key === 'vip packages') {
+      sState.category.clear();
+    } else {
+      const aliases = {
+        concert: 'concerts', concerts: 'concerts',
+        sport: 'sports', sports: 'sports',
+        theater: 'arts', theatre: 'arts', 'arts & theater': 'arts', arts: 'arts', broadway: 'arts',
+        comedy: 'comedy', family: 'family', festivals: 'festivals', festival: 'festivals'
+      };
+      const normalized = aliases[key] || key;
+      sState.category = new Set([normalized]);
+    }
+    sState.page = 1;
+    renderSearch();
+  };
   window.ticketNestSetQuickFilter = function(key) {
     const today = new Date(); today.setHours(0,0,0,0);
     sState.page = 1;
