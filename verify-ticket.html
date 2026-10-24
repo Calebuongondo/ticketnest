@@ -29,7 +29,7 @@ dl{margin:24px 0 0;border-top:1px solid #e8edf3}dl div{padding:14px 0;border-bot
  const root=document.getElementById('result');
  const code=new URLSearchParams(location.search).get('code')||'';
  const supabaseUrl='https://pqsnukgwqvjrsuuqlalz.supabase.co';
- const publicKey='sb_publishable_Tq_IzpwKECj5oN1tWZgP8A.eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9';
+ const publicKey='sb_publishable_Tq_IzpwKECCoDg5nVqZC-A_S0XGlv5B';
  if(!/^[a-f0-9]{24}$/i.test(code)){root.innerHTML='<span class="badge invalid">Invalid reference</span><h1>Ticket could not be verified</h1><p>This QR code does not contain a valid TicketNest reference.</p>';return;}
  try{
   const response=await fetch(supabaseUrl+'/functions/v1/ticket-verify',{method:'POST',headers:{'Content-Type':'application/json','apikey':publicKey},body:JSON.stringify({code})});
