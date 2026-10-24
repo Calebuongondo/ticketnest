@@ -3352,7 +3352,8 @@ function normalizeTicketNestEvent(raw, index) {
     img: String(raw.img || raw.image || raw.image_url || raw.banner_url || ''),
     ribbon: String(raw.ribbon || ''), ribbonType: String(raw.ribbonType || raw.type || ''),
     description: String(raw.description || ''),
-    status: String(raw.status || '')
+    status: String(raw.status || ''),
+    availableTickets: Math.max(0, Number(raw.available_tickets ?? raw.availableTickets ?? 0) || 0)
   };
 }
 let events = eventCatalogueSource.map(normalizeTicketNestEvent).filter(e => e.title && e.title !== 'Untitled event');
@@ -3388,7 +3389,27 @@ async function loadPublishedEvents(options = {}) {
     if (!Array.isArray(payload)) throw new Error('Supabase returned an unexpected event catalogue response.');
 
     // RLS permits public SELECT only for published rows; filter again as a frontend safeguard.
-    eventCatalogueSource = payload.filter(row => String(row.status || '').toLowerCase() === 'published');
+    const publishedRows = payload.filter(row => String(row.status || '').toLowerCase() === 'published');
+    let tierRows = [];
+    if (publishedRows.length) {
+      const tierUrl = new URL(`${TICKETNEST_SUPABASE_URL}/rest/v1/ticket_tiers`);
+      tierUrl.searchParams.set('select', 'event_id,price_usd,quantity_total,quantity_sold');
+      tierUrl.searchParams.set('event_id', `in.(${publishedRows.map(row => row.id).join(',')})`);
+      const tierResponse = await fetch(tierUrl.toString(), { method: 'GET', headers: { apikey: TICKETNEST_SUPABASE_KEY, Authorization: `Bearer ${TICKETNEST_SUPABASE_KEY}`, Accept: 'application/json' }, cache: 'no-store' });
+      if (!tierResponse.ok) throw new Error(`Could not load ticket availability (Supabase ${tierResponse.status}).`);
+      tierRows = await tierResponse.json();
+      if (!Array.isArray(tierRows)) throw new Error('Supabase returned an unexpected ticket availability response.');
+    }
+    const inventoryByEvent = new Map();
+    for (const tier of tierRows) {
+      const remaining = Math.max(0, Number(tier.quantity_total || 0) - Number(tier.quantity_sold || 0));
+      if (remaining < 1) continue;
+      const item = inventoryByEvent.get(tier.event_id) || { available: 0, prices: [] };
+      item.available += remaining;
+      item.prices.push(Math.max(0, Number(tier.price_usd || 0)));
+      inventoryByEvent.set(tier.event_id, item);
+    }
+    eventCatalogueSource = publishedRows.filter(row => inventoryByEvent.has(row.id)).map(row => ({ ...row, price_usd: Math.min(...inventoryByEvent.get(row.id).prices), available_tickets: inventoryByEvent.get(row.id).available }));
     events = eventCatalogueSource
       .map(normalizeTicketNestEvent)
       .filter(e => e.title && e.title !== 'Untitled event');
@@ -3451,7 +3472,7 @@ function renderPublishedEvents() {
     </div>
     <div class="event-body"><div class="event-cat">${e.category}</div><h3>${e.title}</h3>
       <div class="event-venue">${pinSVG}${e.venue}</div>
-      <div class="event-foot"><div class="price">$${e.price}<small>From · incl. fees</small></div><a href="#event" class="tickets-link" data-go="event">Tickets ${arrowSVG}</a></div>
+      <div class="event-foot"><div class="price">${e.price}<small>From · ${e.availableTickets} available</small></div><a href="#event" class="tickets-link" data-go="event">Tickets ${arrowSVG}</a></div>
     </div>
   </article>`).join('') : `<div class="empty-tickets" style="grid-column:1/-1"><h3>No events published yet</h3><p>No published events are available yet. New events will appear here once published by an administrator.</p></div>`;
 }
