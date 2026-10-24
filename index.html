@@ -4753,7 +4753,7 @@ $('done-btn').addEventListener('click', () => { closeDrawer(); showView('home');
     return `
     <article class="ticket">
       <div class="ticket-main">
-        <img class="ticket-img" src="${t.img && /^https?:\\/\\//i.test(t.img) ? t.img : 'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=300&q=80&auto=format&fit=crop'}" alt="${t.event}" />
+        <img class="ticket-img" src="${t.img && (t.img.startsWith('https://') || t.img.startsWith('http://')) ? t.img : 'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=300&q=80&auto=format&fit=crop'}" alt="${t.event}" />
         <div class="ticket-details">
           <span class="ticket-cat">${t.category}</span>
           ${t.verified ? `<span class="ticket-badge">${CHECK.replace('<svg ', '<svg width="9" height="9" ')}Verified</span>` : ''}
@@ -5110,7 +5110,7 @@ $('done-btn').addEventListener('click', () => { closeDrawer(); showView('home');
       <tr>
         <td>
           <div class="order-event-cell">
-            <img class="order-thumb" src="${o.img && /^https?:\\/\\//i.test(o.img) ? o.img : 'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=100&q=80&auto=format&fit=crop'}" alt="" />
+            <img class="order-thumb" src="${o.img && (o.img.startsWith('https://') || o.img.startsWith('http://')) ? o.img : 'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=100&q=80&auto=format&fit=crop'}" alt="" />
             <div class="order-event-info"><strong>${o.event}</strong><small>#${o.orderId}</small></div>
           </div>
         </td>
@@ -5220,7 +5220,7 @@ $('done-btn').addEventListener('click', () => { closeDrawer(); showView('home');
     const t = e.target;
 
     const nav = t.closest('.account-nav a[data-tab]');
-    if (nav) { e.preventDefault(); return switchTab(nav.dataset.tab); }
+    if (nav) { e.preventDefault(); switchTab(nav.dataset.tab); if (['dashboard','tickets','orders'].includes(nav.dataset.tab)) loadAccountData(); return; }
 
     const link = t.closest('a[href="#"]');
     if (link) e.preventDefault();
@@ -5610,6 +5610,7 @@ $('done-btn').addEventListener('click', () => { closeDrawer(); showView('home');
    if (typeof window.showView === 'function') window.showView('account');
    else document.querySelectorAll('main[data-view]').forEach(el => el.classList.toggle('active', el.dataset.view === 'account'));
    history.replaceState(null, '', '#account');
+   if (window.ticketNestLoadAccountData) window.ticketNestLoadAccountData();
  }
  async function restoreSession() {
    let session = storedSession();
