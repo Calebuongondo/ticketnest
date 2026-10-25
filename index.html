@@ -3408,7 +3408,7 @@ body.tn-quantity-open{overflow:hidden!important}
         </div>
       </div>
       <div class="footer-col"><h4>Explore</h4><ul><li><a href="#search" data-go="search">Concerts</a></li><li><a href="#search" data-go="search">Sports</a></li><li><a href="#search" data-go="search">Theater</a></li><li><a href="#search" data-go="search">Comedy</a></li><li><a href="#search" data-go="search">Festivals</a></li><li><a href="#search" data-go="search">VIP Packages</a></li></ul></div>
-      <div class="footer-col"><h4>Support</h4><ul><li><a href="#">Help Center</a></li><li><a href="#">Contact Us</a></li><li><a href="#">Refund Policy</a></li><li><a href="#">Accessibility</a></li><li><a href="#">Sell Tickets</a></li></ul></div>
+      <div class="footer-col"><h4>Support</h4><ul><li><a href="#">Help Center</a></li><li><a href="#">Contact Us</a></li><li><a href="#">Refund Policy</a></li><li><a href="#">Accessibility</a></li><li><a href="#account" data-go="account">Sell Tickets</a></li></ul></div>
       <div class="footer-col"><h4>Company</h4><ul><li><a href="#">About Us</a></li><li><a href="#">Careers</a></li><li><a href="#">Press</a></li><li><a href="#">Partners</a></li><li><a href="#">Blog</a></li></ul></div>
     </div>
     <div class="footer-bottom">
@@ -3429,6 +3429,7 @@ body.tn-quantity-open{overflow:hidden!important}
   <nav aria-label="Main menu">
     <button type="button" data-menu-go="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></svg>Home</button>
     <button type="button" data-menu-go="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>Explore events</button>
+    <button type="button" id="menu-sell-tickets"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v4a2 2 0 0 1 2 2 2 2 0 0 1-2 2v4a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-4a2 2 0 0 1-2-2 2 2 0 0 1 2-2z"/></svg>Sell tickets</button>
     <button type="button" data-menu-go="account" data-account-tab="tickets"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v4a2 2 0 0 1 2 2 2 2 0 0 1-2 2v4a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-4a2 2 0 0 1 2-2 2 2 0 0 1-2-2z"/></svg>My tickets</button>
     <button type="button" id="menu-payment-proof"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4zM8 8h8M8 12h5M8 16h4"/></svg>Submit payment proof</button>
     <button type="button" data-menu-go="account" data-account-tab="orders"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4zM8 8h8M8 12h8M8 16h5"/></svg>Orders</button>
@@ -3468,6 +3469,14 @@ const menuScrim = $('menu-scrim');
 const menuToggle = $('menu-toggle');
 const themeMenuButton = $('theme-toggle-menu');
 const themeMenuLabel = $('theme-toggle-label');
+const menuSellTicketsButton = $('menu-sell-tickets');
+if (menuSellTicketsButton) menuSellTicketsButton.addEventListener('click', () => {
+  closeDrawer();
+  const accountView = document.querySelector('main[data-view="account"]');
+  if (accountView && !accountView.classList.contains('active')) showView('account');
+  if (typeof openSell === 'function') openSell(null);
+  else showToast('Ticket selling is not available right now. Please open My Tickets and select Sell on a ticket.');
+});
 function applySiteTheme(theme, persist = true) {
   const dark = theme === 'dark';
   document.body.dataset.theme = dark ? 'dark' : 'light';
