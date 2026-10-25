@@ -4351,7 +4351,7 @@ if(paymentChoice)paymentChoice.addEventListener('change',()=>{
   if(phoneHelp)phoneHelp.style.display=mpesa?'':'none';
   if(button)button.textContent=mpesa?'Pay with M-Pesa':'Continue to PayPal';
 });
- {
+async function processPayPalCheckout() {
   const btn=$('pay-now'),statusEl=$('payhero-payment-status');
   const notify=message=>{if(statusEl)statusEl.textContent=message;if(window.showToast)window.showToast(message);else alert(message)};
   if(!ticketReservationIds.length||!reservationExpiresAt||Date.parse(reservationExpiresAt)<=Date.now()){notify('Your ticket reservation has expired. Go back and check availability again.');goToStep(1);return;}
