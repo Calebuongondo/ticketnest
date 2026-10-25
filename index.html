@@ -2525,6 +2525,47 @@ body.tn-quantity-open{overflow:hidden!important}
     .hero-actions { gap:9px; flex-wrap:wrap; }
   }
 
+
+  /* TicketNest footer refinement: consistent columns, accessible links and tidy mobile layout. */
+  .footer { position:relative; isolation:isolate; padding:52px 0 26px; overflow:hidden; }
+  .footer .container { width:min(var(--max),calc(100% - 48px)); margin-inline:auto; }
+  .footer-top { grid-template-columns:minmax(240px,1.65fr) repeat(3,minmax(130px,1fr)); gap:clamp(22px,3vw,44px); align-items:start; }
+  .footer-brand { min-width:0; }
+  .footer-brand p { max-width:340px; color:rgba(255,255,255,.72); }
+  .footer-col { min-width:0; }
+  .footer-col h4 { margin-bottom:14px; letter-spacing:.08em; }
+  .footer-col ul, .footer-bottom ul { list-style:none; padding:0; margin:0; }
+  .footer-col ul { gap:9px; }
+  .footer-col a, .footer-bottom a { color:rgba(255,255,255,.72); text-decoration:none; }
+  .footer-col a:focus-visible, .footer-bottom a:focus-visible, .socials a:focus-visible { outline:2px solid #fff; outline-offset:4px; border-radius:4px; }
+  .footer-bottom { align-items:flex-start; padding-top:22px; }
+  .footer-bottom ul { display:flex; flex-wrap:wrap; column-gap:22px; row-gap:10px; }
+  .footer-bottom li { line-height:1.5; }
+  .socials { flex-wrap:wrap; }
+  .socials a { flex:0 0 38px; text-decoration:none; }
+  @media(max-width:900px) {
+    .footer { padding:40px 0 24px; }
+    .footer .container { width:min(var(--max),calc(100% - 32px)); }
+    .footer-top { grid-template-columns:repeat(2,minmax(0,1fr)); gap:28px 24px; }
+    .footer-brand { grid-column:1 / -1; }
+    .footer-brand p { max-width:520px; }
+    .footer-bottom { flex-direction:column; align-items:flex-start; }
+    .footer-bottom ul { gap:10px 18px; }
+  }
+  @media(max-width:480px) {
+    .footer { padding:32px 0 22px; }
+    .footer .container { width:calc(100% - 28px); }
+    .footer-top { grid-template-columns:repeat(2,minmax(0,1fr)); gap:24px 16px; padding-bottom:26px; }
+    .footer-brand { grid-column:1 / -1; }
+    .footer-col h4 { font-size:11px; margin-bottom:11px; }
+    .footer-col ul { gap:8px; }
+    .footer-col a { font-size:13px; overflow-wrap:anywhere; }
+    .footer-bottom { gap:14px; padding-top:18px; font-size:11.5px; }
+    .footer-bottom ul { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px 14px; width:100%; }
+    .footer-bottom li { min-width:0; }
+    .footer-bottom a { display:inline-block; overflow-wrap:anywhere; }
+  }
+
 </style>
 </head>
 <body>
@@ -3358,7 +3399,7 @@ body.tn-quantity-open{overflow:hidden!important}
           <span class="logo-mark"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M22 10V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v4a2 2 0 0 1 2 2 2 2 0 0 1-2 2v4a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-4a2 2 0 0 1-2-2 2 2 0 0 1 2-2z"/></svg></span>
           TicketNest
         </a>
-        <p>Discover live events, explore categories, and keep your plans in one place. Ticket listings and secure ticketing will be enabled as the platform is connected.</p>
+        <p>Your home for live events. Discover experiences, book tickets, and keep every plan together with TicketNest.</p>
         <div class="socials">
           <a href="#" aria-label="Twitter"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.9 1.2h3.7l-8 9.2L24 22.8h-7.4l-5.8-7.6-6.6 7.6H.5l8.6-9.8L0 1.2h7.6l5.2 6.9 6.1-6.9z"/></svg></a>
           <a href="#" aria-label="Instagram"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/></svg></a>
