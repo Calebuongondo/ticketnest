@@ -6558,5 +6558,53 @@ $('done-btn').addEventListener('click', () => { closeDrawer(); showView('home');
 })();
 </script>
 
+
+<script>
+<!-- TicketNest independent interaction recovery: keeps navigation and event cards usable if a main handler fails. -->
+(function () {
+  if (window.__ticketNestInteractionRecoveryInstalled) return;
+  window.__ticketNestInteractionRecoveryInstalled = true;
+
+  function refreshCatalogue() {
+    try {
+      if (typeof loadPublishedEvents === 'function') {
+        Promise.resolve(loadPublishedEvents({ quiet: false })).catch(function (error) {
+          console.error('TicketNest recovery: event catalogue refresh failed', error);
+        });
+      }
+    } catch (error) {
+      console.error('TicketNest recovery: could not start event catalogue refresh', error);
+    }
+  }
+
+  // Retry once after the document is ready; normal catalogue refresh remains enabled.
+  if (document.readyState === 'complete') window.setTimeout(refreshCatalogue, 0);
+  else window.addEventListener('load', refreshCatalogue, { once: true });
+
+  // Capture event-card clicks before a stale or broken bubbling handler can swallow them.
+  document.addEventListener('click', function (event) {
+    var target = event.target && event.target.closest ? event.target.closest('.event-card[data-index], .event-card [data-go="event"], .event-card .tickets-link') : null;
+    if (!target) return;
+    var card = target.closest('.event-card[data-index]');
+    if (!card) return;
+    var index = Number(card.dataset.index);
+    try {
+      if (typeof events === 'undefined' || !Array.isArray(events) || !events[index]) {
+        refreshCatalogue();
+        return;
+      }
+      if (typeof setEventDetails === 'function') setEventDetails(events[index]);
+      if (typeof showView === 'function') showView('event');
+      history.replaceState(null, '', '#event');
+      if (typeof window.ticketNestOpenQuantitySheet === 'function') window.ticketNestOpenQuantitySheet();
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+    } catch (error) {
+      console.error('TicketNest recovery: event card click failed', error);
+    }
+  }, true);
+})();
+</script>
 </body>
 </html>
