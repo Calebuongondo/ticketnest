@@ -2978,8 +2978,8 @@ body.tn-quantity-open{overflow:hidden!important}
         <div class="success-screen">
           <div class="success-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m5 12 4 4L19 6"/></svg></div>
           <h3>Payment confirmed!</h3>
-          <p>Your M-Pesa payment has been verified and your tickets have been issued. You can find them in your TicketNest account.</p>
-          <button class="btn btn-outline btn-block" id="done-btn">Back to Events</button>
+          <p>Your payment is verified. Your tickets are being loaded into My Tickets now. You can open them from your TicketNest account whenever you need them.</p>
+          <button class="btn btn-outline btn-block" id="done-btn">View My Tickets</button>
         </div>
       </div>
     </div>
@@ -4414,7 +4414,8 @@ async function pollPayHeroPayment(reference,token){
     if(data.status==='paid'){
       ticketReservationIds=[];reservationExpiresAt=null;
       if(reservationCountdownTimer){clearInterval(reservationCountdownTimer);reservationCountdownTimer=null;}
-      if(statusEl)statusEl.textContent='Payment verified. Your tickets have been issued.';
+      if(statusEl)statusEl.textContent='Payment verified. Loading your tickets…';
+      if(typeof window.ticketNestLoadAccountData==='function') await window.ticketNestLoadAccountData();
       if(btn){btn.disabled=true;btn.textContent='Payment confirmed';}
       goToStep(4);return;
     }
@@ -4425,7 +4426,7 @@ async function pollPayHeroPayment(reference,token){
   if(btn){btn.disabled=true;btn.textContent='Payment pending';}
 }
 
-$('done-btn').addEventListener('click', () => { closeDrawer(); showView('home'); history.replaceState(null, '', '#home'); });
+$('done-btn').addEventListener('click', async () => { closeDrawer(); showView('account'); history.replaceState(null, '', '#account'); if(typeof window.switchTab==='function') window.switchTab('tickets'); if(typeof window.ticketNestLoadAccountData==='function') await window.ticketNestLoadAccountData(); });
 
 /* PayPal redirects back here after approval; server-side capture verifies the payment before tickets are issued. */
 (function handlePayPalReturn(){
