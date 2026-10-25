@@ -4197,7 +4197,9 @@ document.addEventListener('click', async event => {
   renderCart();
   if (!cart.length) closeDrawer();
   const continueButton = $('continue-1');
-  if (continueButton) continueButton.textContent = 'Continue · 
+  if (continueButton) continueButton.textContent = 'Continue';
+});
+
 function calcTotals() {
   const subtotal = cart.reduce((s, i) => s + i.unitPrice * i.qty, 0);
   const fees = Math.round(subtotal * SERVICE_FEE_RATE);
