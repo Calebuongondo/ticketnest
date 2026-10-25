@@ -3659,7 +3659,20 @@ async function loadPublishedEvents(options = {}) {
   if (publishedEventsRequest) return publishedEventsRequest;
   const grid = $('trending-grid');
   const quiet = Boolean(options.quiet);
-  if (!quiet && grid) grid.innerHTML = `<div class="empty-tickets" style="grid-column:1/-1"><h3>Loading events…</h3><p>Connecting to the TicketNest Supabase catalogue.</p></div>`;
+  // Show the last successful catalogue immediately, then refresh inventory in the background.
+  // Checkout still validates availability with the live database before creating a reservation.
+  if (!events.length) {
+    try {
+      const cached = JSON.parse(localStorage.getItem('ticketnest-event-catalogue-cache') || 'null');
+      if (cached && Array.isArray(cached.events) && cached.events.length && Date.now() - Number(cached.savedAt || 0) < 24 * 60 * 60 * 1000) {
+        events = cached.events;
+        eventCatalogueSource = cached.source || [];
+        renderPublishedEvents();
+        window.ticketNestRefreshSearchCatalogue?.();
+      }
+    } catch (_) {}
+  }
+  if (!quiet && !events.length && grid) grid.innerHTML = `<div class="empty-tickets" style="grid-column:1/-1"><h3>Loading events…</h3><p>Connecting to the TicketNest catalogue.</p></div>`;
 
   const runRequest = async () => {
     const url = new URL(`${TICKETNEST_SUPABASE_URL}/rest/v1/events`);
@@ -3676,7 +3689,7 @@ async function loadPublishedEvents(options = {}) {
         Authorization: `Bearer ${TICKETNEST_SUPABASE_KEY}`,
         Accept: 'application/json'
       },
-      cache: 'no-store'
+      cache: 'default'
     });
     if (!response.ok) {
       const details = await response.text().catch(() => '');
@@ -3715,6 +3728,9 @@ async function loadPublishedEvents(options = {}) {
     renderPublishedEvents();
     window.ticketNestRefreshSearchCatalogue?.();
     lastPublishedEventsLoadAt = Date.now();
+    try {
+      localStorage.setItem('ticketnest-event-catalogue-cache', JSON.stringify({savedAt:Date.now(),events,eventCatalogueSource}));
+    } catch (_) {}
     return events;
   };
 
