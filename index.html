@@ -2964,11 +2964,13 @@ body.tn-quantity-open{overflow:hidden!important}
       </div>
 
       <div class="drawer-step" data-step="3">
-        <h3>Pay securely with M-Pesa</h3>
-        <p class="sub">TicketNest will send an M-Pesa STK Push to your phone through PayHero. Never share your M-Pesa PIN with anyone.</p>
+        <h3>Choose your payment method</h3>
+        <p class="sub">Pay securely with PayPal or M-Pesa. TicketNest only issues tickets after the provider confirms payment.</p>
         <div class="order-box" id="payment-total-box"></div>
-        <div class="field"><label for="payhero-phone">M-Pesa phone number</label><input type="tel" id="payhero-phone" inputmode="tel" autocomplete="tel" placeholder="0712345678" aria-describedby="payhero-phone-help"></div>
-        <p class="sub" id="payhero-phone-help">Use the Kenyan number that should receive the payment prompt.</p>
+        <div class="field"><label for="ticketnest-payment-method">Payment method</label><select id="ticketnest-payment-method"><option value="paypal">PayPal — international checkout</option><option value="mpesa">M-Pesa — Kenya</option></select></div>
+        <div class="field" id="mpesa-phone-field"><label for="payhero-phone">M-Pesa phone number</label><input type="tel" id="payhero-phone" inputmode="tel" autocomplete="tel" placeholder="0712345678" aria-describedby="payhero-phone-help"></div>
+        <p class="sub" id="payhero-phone-help">Use the Kenyan number that should receive the M-Pesa payment prompt.</p>
+        <p class="sub" id="paypal-payment-help">PayPal checkout opens on PayPal’s secure website. You can approve payment using an eligible PayPal account or payment option offered there.</p>
         <p id="payhero-payment-status" role="status" aria-live="polite"></p>
       </div>
 
@@ -4340,7 +4342,37 @@ function goToStep(step) {
   if (step === 2) startReservationCountdown();
 }
 
+const paymentChoice=$('ticketnest-payment-method');
+if(paymentChoice)paymentChoice.addEventListener('change',()=>{
+  const mpesa=paymentChoice.value==='mpesa';
+  const phone=$('mpesa-phone-field'),help=$('paypal-payment-help'),phoneHelp=$('payhero-phone-help'),button=$('pay-now');
+  if(phone)phone.style.display=mpesa?'':'none';
+  if(help)help.style.display=mpesa?'none':'';
+  if(phoneHelp)phoneHelp.style.display=mpesa?'':'none';
+  if(button)button.textContent=mpesa?'Pay with M-Pesa':'Continue to PayPal';
+});
+ {
+  const btn=$('pay-now'),statusEl=$('payhero-payment-status');
+  const notify=message=>{if(statusEl)statusEl.textContent=message;if(window.showToast)window.showToast(message);else alert(message)};
+  if(!ticketReservationIds.length||!reservationExpiresAt||Date.parse(reservationExpiresAt)<=Date.now()){notify('Your ticket reservation has expired. Go back and check availability again.');goToStep(1);return;}
+  const token=window.ticketNestGetAccessToken?await window.ticketNestGetAccessToken():null;
+  if(!token){if(window.ticketNestOpenAuth)window.ticketNestOpenAuth('login');notify('Please sign in again before paying.');return;}
+  if(btn){btn.disabled=true;btn.textContent='Connecting to PayPal…';}
+  if(statusEl)statusEl.textContent='Creating a secure PayPal checkout…';
+  try{
+    const response=await fetch(TICKETNEST_SUPABASE_URL+'/functions/v1/paypal-checkout',{method:'POST',headers:{apikey:TICKETNEST_SUPABASE_KEY,Authorization:'Bearer '+token,'Content-Type':'application/json',Accept:'application/json'},body:JSON.stringify({action:'create',reservation_ids:ticketReservationIds})});
+    const data=await response.json().catch(()=>({}));
+    if(!response.ok||!data.ok||!data.approval_url)throw new Error(data.error||'Could not start PayPal checkout.');
+    sessionStorage.setItem('ticketnest_paypal_attempt',data.attempt_id);
+    window.location.assign(data.approval_url);
+  }catch(error){
+    console.error('TicketNest PayPal checkout error:',error);
+    notify(error.message||'PayPal checkout could not be started.');
+    if(btn){btn.disabled=false;btn.textContent='Continue to PayPal';}
+  }
+}
 async function processPayment() {
+  if ($('ticketnest-payment-method')?.value === 'paypal') { await processPayPalCheckout(); return; }
   const btn=$('pay-now'),statusEl=$('payhero-payment-status'),phone=$('payhero-phone')?.value.trim()||'';
   const notify=message=>{if(statusEl)statusEl.textContent=message;if(window.showToast)window.showToast(message);else alert(message)};
   if(!ticketReservationIds.length||!reservationExpiresAt||Date.parse(reservationExpiresAt)<=Date.now()){notify('Your ticket reservation has expired. Go back and check availability again.');goToStep(1);return;}
@@ -4392,6 +4424,38 @@ async function pollPayHeroPayment(reference,token){
 }
 
 $('done-btn').addEventListener('click', () => { closeDrawer(); showView('home'); history.replaceState(null, '', '#home'); });
+
+/* PayPal redirects back here after approval; server-side capture verifies the payment before tickets are issued. */
+(function handlePayPalReturn(){
+  const params=new URLSearchParams(window.location.search);
+  const state=params.get('paypal');
+  if(!state)return;
+  const attemptId=params.get('attempt_id')||sessionStorage.getItem('ticketnest_paypal_attempt')||'';
+  const orderId=params.get('token')||'';
+  const cleanUrl=window.location.pathname+(window.location.hash||'');
+  history.replaceState(null,'',cleanUrl);
+  const showMessage=message=>{if(window.showToast)window.showToast(message);else console.info(message);};
+  if(state==='cancel'){
+    const token=window.ticketNestGetAccessToken?null:null;
+    showMessage('PayPal checkout was cancelled. No tickets were issued.');
+    sessionStorage.removeItem('ticketnest_paypal_attempt');
+    return;
+  }
+  if(state!=='return'||!attemptId||!orderId){showMessage('PayPal returned without complete checkout details. Check My Tickets before trying again.');return;}
+  (async()=>{
+    try{
+      const accessToken=window.ticketNestGetAccessToken?await window.ticketNestGetAccessToken():null;
+      if(!accessToken){showMessage('Sign in again to finish verifying your PayPal payment. Your payment has not yet been confirmed by TicketNest.');return;}
+      const response=await fetch(TICKETNEST_SUPABASE_URL+'/functions/v1/paypal-checkout',{method:'POST',headers:{apikey:TICKETNEST_SUPABASE_KEY,Authorization:'Bearer '+accessToken,'Content-Type':'application/json',Accept:'application/json'},body:JSON.stringify({action:'capture',attempt_id:attemptId,order_id:orderId})});
+      const data=await response.json().catch(()=>({}));
+      if(!response.ok||!data.ok)throw new Error(data.error||'PayPal payment could not be verified.');
+      sessionStorage.removeItem('ticketnest_paypal_attempt');
+      showMessage('PayPal payment verified. Your tickets have been issued.');
+      if(typeof window.ticketNestLoadAccountData==='function')await window.ticketNestLoadAccountData();
+    }catch(error){console.error('PayPal return verification:',error);showMessage(error.message||'Could not verify PayPal payment. Please contact support before paying again.');}
+  })();
+})();
+
 
 /* ==========================================================
    SEARCH RESULTS LOGIC
