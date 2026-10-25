@@ -2414,6 +2414,117 @@ body.tn-quantity-open{overflow:hidden!important}
   }
   @media(max-width:390px) { .event-grid { grid-template-columns:1fr; } }
 
+
+  /* TicketNest visual refresh: inspired by the clean, event-first ticket marketplace UX in the reference.
+     CSS-only overrides preserve the existing checkout, cart, search and account logic. */
+  :root {
+    --brand:#026cdf;
+    --brand-dark:#0052ad;
+    --brand-light:#e8f1fd;
+    --navy:#071b3a;
+    --r-lg:14px;
+    --shadow-xs:0 2px 8px rgba(13,32,65,.06);
+    --shadow-sm:0 6px 18px rgba(13,32,65,.09);
+  }
+  body { background:#fff; }
+  .header {
+    background:#fff;
+    border-bottom:1px solid #e4eaf2;
+    box-shadow:0 2px 10px rgba(7,27,58,.035);
+  }
+  .header .container { max-width:1320px; }
+  .header-main { min-height:78px; gap:22px; }
+  .logo { font-weight:900; letter-spacing:-.7px; }
+  .logo-mark { color:var(--brand); }
+  .search {
+    max-width:570px; min-height:48px; border:1px solid #cdd6e3;
+    border-radius:8px; background:#fff; box-shadow:none;
+  }
+  .search:focus-within { border-color:var(--brand); box-shadow:0 0 0 3px rgba(2,108,223,.12); }
+  .search input { font-size:14px; }
+  .search-btn { border-radius:6px; font-weight:750; }
+  .actions { gap:12px; }
+  .loc-btn { border-radius:7px; }
+  .icon-btn { border-radius:8px; }
+  .cat-strip { background:#fff; border-top:1px solid #f0f2f6; }
+  .cat-strip-inner { min-height:48px; gap:28px; }
+  .cat-strip a { font-weight:700; font-size:13px; }
+  .cat-strip a.active:after { height:3px; border-radius:3px 3px 0 0; }
+  .hero { min-height:470px; }
+  .hero-bg { transform:none; background-position:center 42%; }
+  .hero-overlay { background:linear-gradient(90deg,rgba(4,18,43,.88) 0%,rgba(4,18,43,.68) 45%,rgba(4,18,43,.08) 100%); }
+  .hero-content { max-width:660px; padding-top:52px; padding-bottom:52px; }
+  .hero h1 { max-width:650px; font-size:clamp(38px,5.2vw,64px); line-height:1.03; letter-spacing:-1.8px; }
+  .hero-sub { max-width:540px; font-size:16px; line-height:1.65; }
+  .hero-tag { background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.22); border-radius:5px; }
+  .hero .btn { border-radius:7px; font-weight:800; }
+  .trust-bar { border-bottom:1px solid #e8edf4; background:#fff; }
+  .trust-bar-inner { justify-content:flex-start; gap:32px; }
+  .trust-item { font-size:13px; font-weight:650; color:#34435a; }
+  .filter-bar { background:#fff; }
+  .filter-inner { gap:10px; }
+  .filter-pill { border-radius:6px; font-weight:700; }
+  .section { padding-top:44px; padding-bottom:44px; }
+  .section-alt { background:#f6f8fb; }
+  .section-head { margin-bottom:22px; align-items:flex-end; }
+  .section-head h2 { font-size:clamp(24px,3vw,32px); letter-spacing:-.7px; font-weight:850; }
+  .section-head p { color:#59677b; }
+  .section-eyebrow { letter-spacing:.08em; font-weight:800; }
+  .event-grid { grid-template-columns:repeat(4,minmax(0,1fr)); gap:18px; }
+  .event-card { border:1px solid #e0e6ef; border-radius:10px; box-shadow:0 2px 7px rgba(7,27,58,.035); }
+  .event-card:hover { transform:translateY(-3px); box-shadow:0 9px 22px rgba(7,27,58,.10); }
+  .event-card img { aspect-ratio:16/9; object-fit:cover; }
+  .event-card .event-card-body { padding:15px; }
+  .cat-grid { grid-template-columns:repeat(5,minmax(0,1fr)); gap:16px; }
+  .cat-card { aspect-ratio:4/3; border-radius:10px; box-shadow:none; }
+  .cat-card:after { background:linear-gradient(180deg,transparent 25%,rgba(4,15,35,.82) 100%); }
+  .cat-info { padding:16px; }
+  .cat-info h3 { font-size:19px; font-weight:850; }
+  .see-all { font-weight:800; }
+  .btn { border-radius:7px; font-weight:750; }
+  .btn-primary { box-shadow:none; }
+  .filter-panel,.filters,.search-toolbar,.checkout-card,.event-detail-card { border-radius:10px; }
+  .search-header { background:#f6f8fb; }
+  .search-header h1 { letter-spacing:-.8px; }
+  .results-layout { gap:26px; }
+  .event-detail-card { border:1px solid #e1e7f0; }
+  .checkout-card { border:1px solid #e1e7f0; box-shadow:0 6px 22px rgba(7,27,58,.06); }
+  @media(max-width:1050px) {
+    .event-grid { grid-template-columns:repeat(3,minmax(0,1fr)); }
+    .cat-grid { grid-template-columns:repeat(3,minmax(0,1fr)); }
+    .header-main { gap:14px; }
+    .loc-btn span { display:none; }
+  }
+  @media(max-width:760px) {
+    .header-main { min-height:64px; flex-wrap:wrap; gap:10px; padding:10px 0; }
+    .header .search { order:3; flex:1 0 100%; max-width:none; min-height:44px; }
+    .header .actions { margin-left:auto; gap:8px; }
+    .header .actions .btn { padding:10px 12px; }
+    .cat-strip-inner { gap:20px; overflow-x:auto; }
+    .cat-strip-inner a { flex:0 0 auto; }
+    .hero { min-height:390px; }
+    .hero-overlay { background:linear-gradient(90deg,rgba(4,18,43,.88),rgba(4,18,43,.55)); }
+    .hero-content { padding-top:38px; padding-bottom:38px; }
+    .hero h1 { font-size:clamp(34px,8vw,48px); letter-spacing:-1px; }
+    .hero-sub { font-size:14px; }
+    .trust-bar-inner { overflow-x:auto; gap:20px; padding:13px 0; }
+    .trust-item { flex:0 0 auto; }
+    .section { padding-top:32px; padding-bottom:32px; }
+    .event-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+    .cat-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+    .cat-card { aspect-ratio:1/1; }
+    .section-head { gap:12px; }
+    .section-head p { font-size:14px; }
+  }
+  @media(max-width:420px) {
+    .event-grid { grid-template-columns:1fr; }
+    .event-card { display:grid; grid-template-columns:38% 1fr; }
+    .event-card img { height:100%; min-height:130px; aspect-ratio:auto; }
+    .event-card .event-card-body { padding:12px; }
+    .cat-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .hero-actions { gap:9px; flex-wrap:wrap; }
+  }
+
 </style>
 </head>
 <body>
@@ -2545,7 +2656,7 @@ body.tn-quantity-open{overflow:hidden!important}
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
         </a>
       </div>
-      <div class="event-grid" id="trending-grid"><div class="empty-tickets" style="grid-column:1/-1"><h3>No events published yet</h3><p>There are no published event records in this preview yet. Events will appear when the catalogue is connected to the admin panel.</p></div></div>
+      <div class="event-grid" id="trending-grid"><div class="empty-tickets" style="grid-column:1/-1"><h3>No events published yet</h3><p>New events will appear here as soon as they are published by event organizers.</p></div></div>
     </div>
   </section>
 
