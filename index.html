@@ -5598,6 +5598,11 @@ $('done-btn').addEventListener('click', () => { closeDrawer(); showView('home');
       return;
     }
 
+    if (t.closest('#menu-sell-tickets')) {
+      closeDrawer();
+      showView('account');
+      return openSell(null);
+    }
     const tr = t.closest('[data-transfer]');
     if (tr && !tr.disabled) return openTransfer(+tr.dataset.transfer);
 
