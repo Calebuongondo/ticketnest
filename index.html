@@ -2968,8 +2968,8 @@ body.tn-quantity-open{overflow:hidden!important}
         <p class="sub">Pay securely with PayPal or M-Pesa. TicketNest only issues tickets after the provider confirms payment.</p>
         <div class="order-box" id="payment-total-box"></div>
         <div class="field"><label for="ticketnest-payment-method">Payment method</label><select id="ticketnest-payment-method"><option value="paypal">PayPal — international checkout</option><option value="mpesa">M-Pesa — Kenya</option></select></div>
-        <div class="field" id="mpesa-phone-field"><label for="payhero-phone">M-Pesa phone number</label><input type="tel" id="payhero-phone" inputmode="tel" autocomplete="tel" placeholder="0712345678" aria-describedby="payhero-phone-help"></div>
-        <p class="sub" id="payhero-phone-help">Use the Kenyan number that should receive the M-Pesa payment prompt.</p>
+        <div class="field" id="mpesa-phone-field" style="display:none"><label for="payhero-phone">M-Pesa phone number</label><input type="tel" id="payhero-phone" inputmode="tel" autocomplete="tel" placeholder="0712345678" aria-describedby="payhero-phone-help"></div>
+        <p class="sub" id="payhero-phone-help" style="display:none">Use the Kenyan number that should receive the M-Pesa payment prompt.</p>
         <p class="sub" id="paypal-payment-help">PayPal checkout opens on PayPal’s secure website. You can approve payment using an eligible PayPal account or payment option offered there.</p>
         <p id="payhero-payment-status" role="status" aria-live="polite"></p>
       </div>
@@ -4336,7 +4336,7 @@ function goToStep(step) {
       goToStep(3);
     });
   } else if (step === 3) {
-    foot.innerHTML = `<button class="btn btn-outline btn-lg" style="flex:1" id="back-3">Back</button><button class="btn btn-primary btn-lg" style="flex:1" id="pay-now">Pay with M-Pesa</button>`;
+    foot.innerHTML = `<button class="btn btn-outline btn-lg" style="flex:1" id="back-3">Back</button><button class="btn btn-primary btn-lg" style="flex:1" id="pay-now">Continue to PayPal</button>`;
     $('back-3').addEventListener('click', () => goToStep(2)); $('pay-now').addEventListener('click', processPayment);
   } else foot.innerHTML = '';
   if (step === 2) startReservationCountdown();
