@@ -2977,9 +2977,9 @@ body.tn-quantity-open{overflow:hidden!important}
       <div class="drawer-step" data-step="4">
         <div class="success-screen">
           <div class="success-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m5 12 4 4L19 6"/></svg></div>
-          <h3>Payment confirmed!</h3>
-          <p>Your payment is verified. Your tickets are being loaded into My Tickets now. You can open them from your TicketNest account whenever you need them.</p>
-          <button class="btn btn-outline btn-block" id="done-btn">View My Tickets</button>
+          <h3>Successfully paid!</h3>
+          <p>Your payment has been verified. Your tickets are now being loaded into My Tickets. You will be taken there automatically.</p>
+          <button class="btn btn-outline btn-block" id="done-btn">Open My Tickets</button>
         </div>
       </div>
     </div>
@@ -4414,10 +4414,18 @@ async function pollPayHeroPayment(reference,token){
     if(data.status==='paid'){
       ticketReservationIds=[];reservationExpiresAt=null;
       if(reservationCountdownTimer){clearInterval(reservationCountdownTimer);reservationCountdownTimer=null;}
-      if(statusEl)statusEl.textContent='Payment verified. Loading your tickets…';
-      if(typeof window.ticketNestLoadAccountData==='function') await window.ticketNestLoadAccountData();
-      if(btn){btn.disabled=true;btn.textContent='Payment confirmed';}
-      goToStep(4);return;
+      if(statusEl)statusEl.textContent='Successfully paid! Loading your tickets…';
+      if(btn){btn.disabled=true;btn.textContent='Payment successful';}
+      goToStep(4);
+      setTimeout(async()=>{
+        closeDrawer();
+        showView('account');
+        history.replaceState(null,'','#account');
+        if(typeof window.switchTab==='function')window.switchTab('tickets');
+        if(typeof window.ticketNestLoadAccountData==='function')await window.ticketNestLoadAccountData();
+        if(typeof window.showToast==='function')window.showToast('Successfully paid! Your tickets are in My Tickets.');
+      },1600);
+      return;
     }
     if(data.status==='failed')throw new Error('The M-Pesa payment failed or was cancelled. You can try again.');
     if(statusEl)statusEl.textContent='Waiting for PayHero to confirm your M-Pesa payment…';
@@ -4453,8 +4461,7 @@ $('done-btn').addEventListener('click', async () => { closeDrawer(); showView('a
       const data=await response.json().catch(()=>({}));
       if(!response.ok||!data.ok)throw new Error(data.error||'PayPal payment could not be verified.');
       sessionStorage.removeItem('ticketnest_paypal_attempt');
-      showMessage('PayPal payment verified. Opening your tickets…');
-      if(typeof window.ticketNestLoadAccountData==='function')await window.ticketNestLoadAccountData();
+      showMessage('Successfully paid! Opening your tickets…');
       if(typeof window.showView==='function')window.showView('account');
       if(typeof window.switchTab==='function')window.switchTab('tickets');
       history.replaceState(null,'','#account');
