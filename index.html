@@ -2626,6 +2626,111 @@ body.tn-quantity-open{overflow:hidden!important}
 @media(max-width:390px){.event-grid{grid-template-columns:minmax(0,1fr)}.hero-actions{flex-wrap:wrap}.hero-actions .btn{width:100%;justify-content:center}.section-head{flex-direction:column}.cat-grid{gap:9px}.cat-info h3{font-size:15px}}
 
 </style>
+
+<!-- TicketNest premium discovery refresh: additive overrides, preserving existing checkout/admin/payment logic. -->
+<style id="ticketnest-premium-refresh">
+  :root {
+    --brand:#1268E8; --brand-dark:#0752C7; --brand-light:#EAF2FF;
+    --navy:#07172F; --ink:#111827; --muted:#5B6678; --line:#E2E8F0;
+    --surface:#FFFFFF; --surface-2:#F5F7FB;
+  }
+  body[data-theme="dark"] {
+    --brand:#6AA8FF; --brand-dark:#3D87F5; --brand-light:#142B4B;
+    --navy:#050B16; --ink:#F3F6FC; --muted:#A9B5C7; --line:#29364A;
+    --surface:#090F1A; --surface-2:#111B2A;
+  }
+  .header {
+    background:color-mix(in srgb,var(--surface) 94%,transparent);
+    box-shadow:0 5px 24px rgba(8,24,48,.055);
+    border-bottom-color:var(--line);
+  }
+  .header-main { min-height:76px; gap:clamp(10px,1.8vw,24px); }
+  .logo { font-size:23px; letter-spacing:-1px; }
+  .logo-mark { width:36px;height:36px;border-radius:11px; }
+  .search input {
+    min-height:48px;background:var(--surface-2);border-color:transparent;
+    padding-left:48px;font-size:14px;
+  }
+  .search input:focus { border-color:var(--brand); }
+  .search-btn { height:38px;right:5px;padding:0 20px; }
+  .cat-strip { background:var(--surface); }
+  .cat-strip a { padding-top:14px;padding-bottom:14px;font-weight:600; }
+  .hero { min-height:590px;background:#06152C; }
+  .hero-bg { transform:scale(1.02); }
+  .hero-overlay {
+    background:linear-gradient(90deg,rgba(3,12,28,.96) 0%,rgba(3,12,28,.82) 43%,rgba(3,12,28,.3) 100%),
+      linear-gradient(0deg,rgba(3,12,28,.42),transparent 48%);
+  }
+  .hero-content { max-width:720px;padding:100px 0; }
+  .hero h1 { max-width:700px;font-size:clamp(42px,6vw,68px);letter-spacing:-2.5px;line-height:1.02; }
+  .hero h1 em { color:#8DBBFF; }
+  .hero-sub { max-width:570px;font-size:17px;line-height:1.65; }
+  .hero-tag { background:rgba(18,104,232,.92);letter-spacing:.8px; }
+  .trust-bar { background:var(--surface); }
+  .trust-bar-inner { justify-content:flex-start;gap:clamp(20px,5vw,64px);padding:21px 0; }
+  .trust-item { font-size:13px;font-weight:650; }
+  .filter-bar { background:var(--surface);padding:20px 0; }
+  .filter-pill { min-height:42px;padding:9px 17px;font-weight:650;background:var(--surface-2); }
+  .filter-pill.active { background:var(--brand); }
+  .section { padding:72px 0; }
+  .section-head { margin-bottom:30px; }
+  .section-head h2 { font-size:clamp(26px,3.5vw,36px);letter-spacing:-1.1px; }
+  .section-head p { font-size:14.5px; }
+  .event-grid { grid-template-columns:repeat(auto-fill,minmax(265px,1fr));gap:22px; }
+  .event-card {
+    border-radius:16px;overflow:hidden;background:var(--surface);
+    border:1px solid var(--line);box-shadow:0 2px 10px rgba(15,23,42,.035);
+    transition:transform .22s ease,box-shadow .22s ease,border-color .22s ease;
+  }
+  .event-card:hover {
+    transform:translateY(-4px);border-color:color-mix(in srgb,var(--brand) 36%,var(--line));
+    box-shadow:0 16px 34px rgba(15,35,70,.12);
+  }
+  .event-media { aspect-ratio:16/9;overflow:hidden;background:var(--surface-2); }
+  .event-media > img { width:100%;height:100%;object-fit:cover;transition:transform .35s ease; }
+  .event-card:hover .event-media > img { transform:scale(1.035); }
+  .event-body { padding:17px 17px 16px; }
+  .event-body h3 { font-size:17px;line-height:1.35;letter-spacing:-.25px; }
+  .event-cat { font-size:10.5px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--brand); }
+  .event-venue { font-size:12.5px; }
+  .event-foot { border-top:1px solid var(--line);padding-top:13px;margin-top:14px; }
+  .price { font-size:17px;font-weight:850; }
+  .tickets-link { font-weight:750; }
+  .cat-card { border-radius:15px;overflow:hidden; }
+  .cat-card img { transition:transform .35s ease; }
+  .cat-card:hover img { transform:scale(1.04); }
+  .newsletter { border-radius:20px; }
+  .btn { transition:transform .18s ease,box-shadow .18s ease,background .18s ease; }
+  .btn:active { transform:translateY(1px); }
+  body[data-theme="dark"] .header { background:rgba(9,15,26,.96); }
+  body[data-theme="dark"] .filter-bar { background:var(--surface); }
+  body[data-theme="dark"] .filter-pill { background:var(--surface-2);color:var(--ink);border-color:var(--line); }
+  body[data-theme="dark"] .filter-pill.active { background:var(--brand);color:#07172F;border-color:var(--brand); }
+  body[data-theme="dark"] .event-card { background:var(--surface-2);border-color:var(--line); }
+  @media(max-width:720px) {
+    .header-main { min-height:unset;padding:12px 0; }
+    .hero { min-height:450px; }
+    .hero-content { padding:62px 0; }
+    .hero h1 { font-size:clamp(38px,9vw,52px);letter-spacing:-1.7px; }
+    .hero-sub { font-size:15px; }
+    .trust-bar-inner { padding:16px 0; }
+    .section { padding:42px 0; }
+    .event-grid { grid-template-columns:repeat(2,minmax(0,1fr));gap:13px; }
+    .event-body { padding:12px; }
+    .event-body h3 { font-size:14px; }
+    .event-venue { font-size:11px; }
+    .price { font-size:15px; }
+    .tickets-link { font-size:12px; }
+  }
+  @media(max-width:390px) {
+    .event-grid { grid-template-columns:minmax(0,1fr); }
+    .event-media { aspect-ratio:16/8.5; }
+  }
+  @media(prefers-reduced-motion:reduce) {
+    .event-card,.event-media > img,.cat-card img { transition:none!important; }
+  }
+</style>
+
 </head>
 <body>
 
