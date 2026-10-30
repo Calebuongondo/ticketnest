@@ -21,3 +21,56 @@ body{background:linear-gradient(180deg,#f4f8ff 0%,#f8fbff 34%,#f1f7ff 72%,#f7f9f
 .organizer{background:radial-gradient(ellipse at 85% 15%,rgba(71,211,239,.35),transparent 35%),linear-gradient(115deg,#062c59 0%,#0759a8 60%,#3446a0 100%);box-shadow:0 16px 36px rgba(5,48,99,.16)}
 footer{background:linear-gradient(180deg,#f8fbff 0%,#edf4fc 100%)}
 @media(max-width:640px){.events{padding-top:28px}.hero{background-position:center}.hero-overlay{background:linear-gradient(90deg,rgba(2,22,49,.88),rgba(4,40,79,.48)),linear-gradient(0deg,rgba(2,21,48,.48),transparent 70%)}.organizer{background:linear-gradient(130deg,#062c59,#0759a8 68%,#3446a0)}}
+
+
+/* Cool aurora backgrounds and layered colour depth */
+body{
+  background-color:#f3f7ff;
+  background-image:
+    radial-gradient(ellipse at 8% 7%,rgba(87,163,255,.14),transparent 27rem),
+    radial-gradient(ellipse at 92% 34%,rgba(130,113,255,.10),transparent 30rem),
+    radial-gradient(ellipse at 48% 88%,rgba(51,196,220,.09),transparent 34rem),
+    linear-gradient(180deg,#f5f8ff 0%,#f9fbff 48%,#f0f6ff 100%);
+  background-attachment:fixed;
+}
+.hero{
+  background:
+    radial-gradient(ellipse at 78% 12%,rgba(65,210,239,.34),transparent 29%),
+    radial-gradient(ellipse at 94% 82%,rgba(107,102,255,.36),transparent 35%),
+    linear-gradient(120deg,#041b39 0%,#073e79 54%,#263d91 100%);
+}
+.categories{
+  background:
+    radial-gradient(ellipse at 0% 0%,rgba(77,157,255,.16),transparent 34%),
+    radial-gradient(ellipse at 100% 70%,rgba(126,107,255,.12),transparent 34%),
+    linear-gradient(120deg,#f5f9ff 0%,#f9fbff 55%,#f1f8ff 100%);
+}
+.events{
+  background:
+    radial-gradient(ellipse at 88% 8%,rgba(101,143,255,.10),transparent 27rem),
+    linear-gradient(180deg,#edf4ff 0%,#f7faff 48%,#eef5ff 100%);
+}
+.discovery-band{
+  background:
+    radial-gradient(ellipse at 8% 18%,rgba(66,157,255,.24),transparent 36%),
+    radial-gradient(ellipse at 92% 85%,rgba(112,102,240,.16),transparent 34%),
+    linear-gradient(115deg,#e8f3ff 0%,#edf0ff 52%,#e3f8fb 100%);
+}
+.how{
+  background:
+    radial-gradient(ellipse at 90% 25%,rgba(89,177,255,.10),transparent 28rem),
+    linear-gradient(180deg,#f7faff 0%,#f0f6ff 100%);
+}
+.event-card,.category-grid button,.steps article{
+  border-color:rgba(177,199,226,.58);
+  box-shadow:0 8px 24px rgba(13,56,102,.065);
+}
+.event-card:hover,.category-grid button:hover{
+  box-shadow:0 16px 34px rgba(21,82,150,.13);
+}
+@media(max-width:640px){
+  body{background-attachment:scroll}
+  .hero{background:
+    radial-gradient(ellipse at 90% 10%,rgba(65,210,239,.27),transparent 35%),
+    linear-gradient(130deg,#041b39 0%,#073e79 65%,#263d91 100%)}
+}
