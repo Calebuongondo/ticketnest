@@ -1,0 +1,8 @@
+// Preview-only examples. Replace with real published inventory before launch.
+window.TICKETNEST_EVENTS=[
+{id:"p1",title:"Nairobi After Dark",category:"music",venue:"KICC Rooftop, Nairobi",date:"2026-11-14",price:1800,image:"https://images.unsplash.com/photo-1459749411175-04bf5292ceea?auto=format&fit=crop&w=900&q=80"},
+{id:"p2",title:"The Big Matchday",category:"sports",venue:"Nyayo National Stadium, Nairobi",date:"2026-11-21",price:1200,image:"https://images.unsplash.com/photo-1522778119026-d647f0596c20?auto=format&fit=crop&w=900&q=80"},
+{id:"p3",title:"Laugh Out Loud Live",category:"comedy",venue:"Two Rivers, Nairobi",date:"2026-11-28",price:1500,image:"https://images.unsplash.com/photo-1585699324551-f6c309eedeca?auto=format&fit=crop&w=900&q=80"},
+{id:"p4",title:"Colours of Africa Festival",category:"festival",venue:"Uhuru Gardens, Nairobi",date:"2026-12-05",price:2500,image:"https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?auto=format&fit=crop&w=900&q=80"},
+{id:"p5",title:"An Evening of Strings",category:"theatre",venue:"Kenya National Theatre, Nairobi",date:"2026-12-12",price:2000,image:"https://images.unsplash.com/photo-1503095396549-807759245b35?auto=format&fit=crop&w=900&q=80"},
+{id:"p6",title:"Summer Sound Sessions",category:"music",venue:"Carnivore Grounds, Nairobi",date:"2026-12-19",price:3000,image:"https://images.unsplash.com/photo-1506157786151-b8491531f063?auto=format&fit=crop&w=900&q=80"}];

@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: ticketnest-new
+    runtime: static
+    buildCommand: echo "TicketNest static site ready"
+    staticPublishPath: .
+    pullRequestPreviewsEnabled: true
